@@ -1,0 +1,130 @@
+//required
+//optional
+//repeated
+
+package GameProtocol;
+
+import "EpochProtocol.proto";
+
+enum GameMode
+{
+    TimelimitPVE = 1;
+    EndlessPVE   = 2;
+    TimelimitPVP = 3;
+    EndlessPVP   = 4;
+}
+
+enum GameVKey
+{
+    MoveX        = 1;
+    MoveY        = 2;
+    SpeedUp      = 3;
+    CreatePlayer = 4;
+}
+
+
+//----------------------------FSP(帧同步)----------------------------
+//游戏启动参数
+message FSPParam
+{
+    required string host = 1;
+    required int32 port = 2;
+    required int32 sid = 3;
+    optional int32 serverFrameInterval = 4 [default = 66];
+    optional int32 serverTimeout = 5 [default = 15000]; //ms
+    optional int32 clientFrameRateMultiple = 6 [default = 2];
+    optional int32 enableSpeedUp = 7 [default = 1]; //bool
+    optional int32 defaultSpeed = 8 [default = 1];
+    optional int32 frameBufferSize = 9;
+    optional int32 enableAutoBuffer = 10 [default = 1]; //bool
+    optional int32 maxFrameId = 11 [default = 1800];
+    optional int32 authId = 12;
+}
+
+//游戏输入
+message FSPVKey
+{
+    required int32 vkey = 1;
+    repeated int32  args = 2;
+    required int32 playerIdOrFrameId = 3;  //S2C  服务器下发PlayerId, C2S  客户端上报ClientFrameId
+}
+
+//客户端上报的数据
+message FSPData_CS
+{
+    required int32 sid = 1;
+    repeated FSPVKey vkeys = 2;
+}
+
+
+//服务器下发的
+message FSPFrame
+{
+    required int32 frameId = 1;
+    repeated FSPVKey vkeys = 2;
+}
+
+//服务器下发的数据
+message FSPData_SC
+{
+    repeated FSPFrame frames = 1;
+}
+
+//游戏状态协议包
+enum FSPVKeyBase
+{
+    GAME_BEGIN = 100;
+    ROUND_BEGIN = 101;
+    LOAD_START = 102;
+    LOAD_PROGRESS = 103;
+    CONTROL_START = 104;
+    GAME_EXIT = 105;
+    ROUND_END = 106;
+    GAME_END = 107;
+    AUTH = 108;
+    PING = 109;
+}
+
+//游戏状态
+enum FSPGameState
+{
+    None = 0;
+    Create = 1;
+    GameBegin = 2;
+    RoundBegin = 3;
+    ControlStart = 4;
+    RoundEnd = 5;
+    GameEnd = 6;
+}
+
+//GameEnd的原因
+enum FSPGameEndReason
+{
+    Normal = 0; //正常结束
+    AllOtherExit = 1; //所有其他人都主动退出了
+    AllOtherLost = 2;  //所有其他人都掉线了
+}
+
+//玩家数据
+message FSPPlayerData
+{
+    required uint32 id = 1;
+    optional string name = 2;
+    optional int32 userId = 3;
+    optional int32 sid = 4;
+    optional int32 isReady = 5; //bool
+    optional bytes customPlayerData = 6; //byte[]
+}
+
+message FSPGameStartParam
+{
+    required FSPParam fspParam = 1;
+    repeated FSPPlayerData players = 2;
+    optional bytes customPlayerData = 3; //byte[]
+}
+
+message FSPRoomData
+{
+    required uint32 id = 1;
+    repeated FSPPlayerData players = 2;
+}

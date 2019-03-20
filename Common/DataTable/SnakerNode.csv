@@ -1,0 +1,8 @@
+KS,S,S,S,I,F,I
+ID,Name,Node Type,Prefab,Radius,Blast Chance,Blast Food
+1001,头1,head,Snakers/head_1,8,1,10003
+1002,身体1,body,Snakers/node_1,8,0.5,10003
+1003,尾1,tail,Snakers/tail_1,8,1,10003
+1004,头2,head,Snakers/head_2,8,1,10004
+1005,身体2,body,Snakers/node_2,8,0.5,10004
+1006,尾2,tail,Snakers/tail_2,8,1,10004

@@ -1,0 +1,6 @@
+KS,S,S,S,I,I
+ID,Type,Name,Prefab,Enegy,Radius
+10001,Normal,Food1,Foods/food_1,2,8
+10002,Normal,Food2,Foods/food_2,2,8
+10003,Special,Food3,Foods/food_1,5,8
+10004,Special,Food4,Foods/food_2,5,8

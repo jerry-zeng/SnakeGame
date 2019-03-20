@@ -1,0 +1,12 @@
+//required
+//optional
+//repeated
+
+package LobbyProtocol;
+
+import "EpochProtocol.proto";
+
+message CS_QueryQuest
+{
+    
+}

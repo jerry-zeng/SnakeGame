@@ -1,0 +1,4 @@
+KS,S,S,I,I,I,I,I,I,F
+ID,Name,Prefab,Head,Body,Tail,Enegy Per Node,KeyStep,InitLength,StepSpeed
+101,Snaker1,Snakers/snaker,1001,1002,1003,1,5,25,2
+102,Snaker2,Snakers/snaker,1004,1005,1006,1,5,25,2

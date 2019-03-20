@@ -1,0 +1,21 @@
+//required
+//optional
+//repeated
+
+package EpochProtocol;
+
+
+enum ResultCode
+{
+    RC_SUCCESS                      = 0;
+    RC_FAIL                         = 1;
+
+}
+
+message UserData
+{
+    required uint32 id = 1;
+    required string userName = 2;
+    required string password = 3;
+}
+
