@@ -1,0 +1,6 @@
+KS,S,S,F,I,I
+ID,Type,Name,Limit Time,Limit Player,Map ID
+1,TimeLimitPVE,限时PVE,180,1,1
+2,EndlessPVE,无尽PVE,0,1,1
+3,TimeLimitPVP,限时PVP,900,10,1
+4,EndlessPVP,无尽PVP,0,10,1
