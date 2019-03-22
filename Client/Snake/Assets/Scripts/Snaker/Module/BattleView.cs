@@ -164,7 +164,7 @@ namespace GamePlay
                 _focusPlayerID = 0;
                 GameInput.DisableInput();
 
-                Scheduler.Schedule( 0.5f, ()=>
+                Scheduler.ScheduleOnce( 0.5f, ()=>
                 {
                     MessageBox.Show("Revive or Quit this game?",
                                     "Quit", ()=>{

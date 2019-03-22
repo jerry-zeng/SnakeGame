@@ -1,74 +1,377 @@
-﻿////////////////////////////////////////////////////////////////////
-//                            _ooOoo_                             //
-//                           o8888888o                            //
-//                           88" . "88                            //
-//                           (| ^_^ |)                            //
-//                           O\  =  /O                            //
-//                        ____/`---'\____                         //
-//                      .'  \\|     |//  `.                       //
-//                     /  \\|||  :  |||//  \                      //
-//                    /  _||||| -:- |||||-  \                     //
-//                    |   | \\\  -  /// |   |                     //
-//                    | \_|  ''\---/''  |   |                     //
-//                    \  .-\__  `-`  ___/-. /                     //
-//                  ___`. .'  /--.--\  `. . ___                   //
-//                ."" '<  `.___\_<|>_/___.'  >'"".                //
-//              | | :  `- \`.;`\ _ /`;.`/ - ` : | |               //
-//              \  \ `-.   \_ __\ /__ _/   .-` /  /               //
-//        ========`-.____`-.___\_____/___.-`____.-'========       //
-//                             `=---='                            //
-//        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^      //
-//            佛祖保佑       无BUG        不修改                   //
-////////////////////////////////////////////////////////////////////
-
+﻿
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Exception = System.Exception;
 
-
 namespace Framework
 {
-    public class ScheduledEvent
-    {
-        public Action Callback { get { return _callback; } set { _callback = value; } }
-        public Action<object> CallbackWithArg { get { return _callbackArg; } set { _callbackArg = value; } }
-        public object Argument { get { return _argument; } set { _argument = value; } }
-        public float RemainTime { get { return _remainTime; } set { _remainTime = value; } }
-
-        // Internal variables.
-        private Action _callback = null;
-        private Action<object> _callbackArg = null;
-        private object _argument;
-        private float _remainTime;
-
-        public void Reset()
-        {
-            _callback = null;
-            _callbackArg = null;
-            _argument = null;
-        }
-    }
-
-
     public class Scheduler : MonoSingleton<Scheduler>
     {
-
         protected override void InitSingleton()
         {
             base.InitSingleton();
 
-            _activeSchedulers.Clear();
+            _pool = new ObjectPool<Timer>( onRelease: (timer)=>{
+                timer.Reset();
+            } );
         }
 
         protected override void OnDestroy()
         {
             base.OnDestroy();
 
-            _activeSchedulers.Clear();
+            // when singleton is being destoryed, it's no need to return timers to pool.
+            _timersToAdd.Clear();
+            _workingTimers.Clear();
+            _workingTimersCount = 0;
+            _waitingTimers.Clear();
+            _waitingTimersCount = 0;
+            _nextID = TIMER_START_ID;
+            _cancelAll = false;
+            _hasPrepared = false;
         }
 
         //===========================================================
+
+        #region Scheduler
+        public const float MIN_INTERVAL = 1f / 60f;
+        public const uint TIMER_START_ID = 1;
+
+        private ObjectPool<Timer> _pool;
+        private int MaxPoolSize = 50;
+
+        private List<Timer> _workingTimers = new List<Timer>(50);
+        private int _workingTimersCount = 0;
+        private List<Timer> _waitingTimers = new List<Timer>(50);
+        private int _waitingTimersCount = 0;
+
+        [System.NonSerialized]
+        public float TimeThrehold = 1f;
+        private float _minExecTimeOnWait = float.MaxValue;
+        private bool _hasPrepared = false;
+
+        private List<Timer> _timersToAdd = new List<Timer>();
+        private uint _nextID = TIMER_START_ID;
+        private bool _isRunning = false;
+        private bool _cancelAll = false;
+
+
+        public static uint Schedule(float interval, uint repeatTimes, Action callback)
+        {
+            if(Instance != null) 
+            {
+                return Instance.AddEventInternal(interval, repeatTimes, callback);
+            }
+            return 0;
+        }
+
+        public static uint ScheduleNextFrame(Action callback)
+        {
+            return Schedule(0f, 1, callback);
+        }
+
+        public static uint ScheduleOnce(float delay, Action callback)
+        {
+            return Schedule(delay, 1, callback);
+        }
+
+        /// <summary>
+        /// Internal method to add a new event to be executed in the future.
+        /// </summary>
+        /// <param name="delay">The delay from the current time to execute the event.</param>
+        /// <param name="callback">The delegate to execute after the specified delay.</param>
+        /// <returns>The ScheduledEvent instance, useful if the event should be cancelled.</returns>
+        private uint AddEventInternal(float interval, uint repeatTimes, Action callback)
+        {
+            // Don't add the event if the game hasn't started.
+            if( isActiveAndEnabled == false || callback == null )
+                return 0;
+
+            if( interval <= 0f ) interval = MIN_INTERVAL;
+
+            Timer timer = GetTimer();
+            float nextTime = GetCurrentTime() + interval;
+            timer.Init( _nextID, interval, repeatTimes, callback, nextTime );
+
+            _nextID++;
+
+            if( _isRunning ){
+                _timersToAdd.Add( timer );
+            }
+            else
+            {
+                if( !_hasPrepared ){
+                    PushToWaitingQueue(timer);
+                }
+                else
+                {
+                    if( nextTime < _minExecTimeOnWait + TimeThrehold ){
+                        PushToWorkingQueue(timer);
+                    }
+                    else{
+                        PushToWaitingQueue(timer);
+                    }
+                }
+            }
+
+            return _nextID;
+        }
+
+        /// <summary>
+        /// Cancels an event.
+        /// </summary>
+        /// <param name="id">The timer id to cancel.</param>
+        public static bool Cancel(uint id)
+        {
+            if( Instance != null ) 
+            {
+                return Instance.CancelEventInternal(id);
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Internal method to cancel an event.
+        /// </summary>
+        /// <param name="id">The timer id to cancel.</param>
+        private bool CancelEventInternal(uint id)
+        {
+            if( id == 0 )
+                return false;
+
+            for( int i = 0; i < _workingTimersCount; i++ )
+            {
+                if( _workingTimers[i].ID == id ){
+                    _workingTimers[i].Abort();
+                    return true;
+                }
+            }
+
+            for( int i = 0; i < _waitingTimersCount; i++ )
+            {
+                if( _waitingTimers[i].ID == id ){
+                    _waitingTimers[i].Abort();
+                    return true;
+                }
+            }
+
+            for( int i = 0; i < _timersToAdd.Count; i++ )
+            {
+                if( _timersToAdd[i].ID == id ){
+                    _timersToAdd[i].Abort();
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+
+        public void CancelAll()
+        {
+            if( _isRunning ){
+                _cancelAll = true;
+                return;
+            }
+
+            _cancelAll = false;
+
+            _timersToAdd.Clear();
+            _workingTimers.Clear();
+            _waitingTimers.Clear();
+
+            _pool.Clear();
+        }
+
+
+        private Timer GetTimer()
+        {
+            return _pool.Get();
+        }
+        private bool ReleaseTimer(Timer timer)
+        {
+            if( _pool.Count >= MaxPoolSize )
+                return false;
+            
+            _pool.Release(timer);
+            return true;
+        }
+
+        private float GetCurrentTime()
+        {
+            return Time.time;
+        }
+
+        void RemoveWorkingQueueAt(int index)
+        {
+            if( index < 0 || index >= _workingTimersCount )
+                return;
+
+            _workingTimers[index] = _workingTimers[_workingTimersCount-1];
+            _workingTimers[_workingTimersCount - 1] = null;
+            _workingTimersCount--;
+        }
+        void PushToWorkingQueue(Timer timer)
+        {
+            if( timer == null ) return;
+
+            if( _workingTimersCount >= _workingTimers.Count ){
+                _workingTimers.Add(timer);
+            }
+            else{
+                _workingTimers[_workingTimersCount] = timer;
+            }
+            _workingTimersCount++;
+        }
+        void RemoveWaitingQueueAt(int index)
+        {
+            if( index < 0 || index >= _waitingTimersCount )
+                return;
+
+            _waitingTimers[index] = _waitingTimers[_waitingTimersCount-1];
+            _waitingTimers[_waitingTimersCount - 1] = null;
+            _waitingTimersCount--;
+        }
+        void PushToWaitingQueue(Timer timer)
+        {
+            if( timer == null ) return;
+
+            _hasPrepared = true;
+
+            if( _waitingTimersCount >= _waitingTimers.Count ){
+                _waitingTimers.Add(timer);
+            }
+            else{
+                _waitingTimers[_waitingTimersCount] = timer;
+            }
+            _waitingTimersCount++;
+
+            float nextTime = timer.NextExecuteTime;
+            if( nextTime < _minExecTimeOnWait )
+                _minExecTimeOnWait = nextTime;
+        }
+
+        private void AddWaitingTimers()
+        {
+            foreach( Timer timer in _timersToAdd )
+            {
+                if( timer.IsAborted ){
+                    ReleaseTimer(timer);
+                    continue;
+                }
+
+                float nextTime = timer.NextExecuteTime;
+
+                if( nextTime < _minExecTimeOnWait && _hasPrepared ){
+                    PushToWorkingQueue(timer);
+                }
+                else{
+                    PushToWaitingQueue(timer);
+                }
+            }
+            _timersToAdd.Clear();
+        }
+
+        private void UpdateWaitingTimers(float curTime)
+        {
+            if( curTime >= _minExecTimeOnWait )
+            {
+                float newMinExecTimeOnWait = float.MaxValue;
+
+                for( int i = _waitingTimersCount-1; i >= 0; i-- )
+                {
+                    Timer timer = _waitingTimers[i];
+                    if( timer.IsAborted )
+                    {
+                        ReleaseTimer( timer );
+                        RemoveWaitingQueueAt(i);
+                        continue;
+                    }
+
+                    float nextTime = timer.NextExecuteTime;
+                    if( nextTime <= _minExecTimeOnWait + TimeThrehold ){
+                        //move to working queue
+                        RemoveWaitingQueueAt(i);
+                        PushToWorkingQueue(timer);
+                    }
+                    else
+                    {
+                        // keep it
+                        // update newMinExecTimeOnWait
+                        if( nextTime < newMinExecTimeOnWait )
+                            newMinExecTimeOnWait = nextTime;
+                    }
+                }
+
+                _minExecTimeOnWait = newMinExecTimeOnWait;
+            }
+
+        }
+
+        private void UpdateWorkingTimers(float curTime)
+        {
+            for( int i = _workingTimersCount-1; i >= 0; i-- )
+            {
+                Timer timer = _workingTimers[i];
+                if( timer.IsAborted )
+                {
+                    ReleaseTimer( timer );
+                    RemoveWorkingQueueAt(i);
+                    continue;
+                }
+
+                float nextTime = timer.NextExecuteTime;
+                if( curTime >= nextTime )
+                {
+                    timer.Trigger();
+
+                    if( timer.IsAborted )
+                    {
+                        ReleaseTimer( timer );
+                        RemoveWorkingQueueAt(i);
+                    }
+                    else
+                    {
+                        nextTime = curTime + timer.Interval;
+                        timer.NextExecuteTime = nextTime;
+
+                        if( nextTime < _minExecTimeOnWait ){
+                            // keep it
+                        }
+                        else{
+                            //move to waiting queue
+                            RemoveWorkingQueueAt(i);
+                            PushToWaitingQueue(timer);
+                        }
+                    }
+                }
+            }
+
+        }
+
+        private void UpdateTimers()
+        {
+            AddWaitingTimers();
+
+            _isRunning = true;
+
+            float curTime = GetCurrentTime();
+
+            // sweep waiting timers
+            UpdateWaitingTimers(curTime);
+
+            // update working timers
+            UpdateWorkingTimers(curTime);
+
+            _isRunning = false;
+
+            //async
+            if( _cancelAll )
+                CancelAll();
+        }
+        #endregion
+
         #region MonoUpdateEvent
         protected event MonoUpdateEvent UpdateEvent;
         protected event MonoUpdateEvent LateUpdateEvent;
@@ -124,150 +427,9 @@ namespace Framework
         }
         #endregion
 
-        #region Scheduler
-        private List<ScheduledEvent> _activeSchedulers = new List<ScheduledEvent>();
-
-
-        public static ScheduledEvent Schedule(float delay, Action callback)
-        {
-            if(Instance != null) 
-            {
-                return Instance.AddEventInternal(delay, callback);
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Internal method to add a new event to be executed in the future.
-        /// </summary>
-        /// <param name="delay">The delay from the current time to execute the event.</param>
-        /// <param name="callback">The delegate to execute after the specified delay.</param>
-        /// <returns>The ScheduledEvent instance, useful if the event should be cancelled.</returns>
-        private ScheduledEvent AddEventInternal(float delay, Action callback)
-        {
-            // Don't add the event if the game hasn't started.
-            if( isActiveAndEnabled == false || callback == null )
-                return null;
-
-            if( delay <= 0 )
-            {
-                callback();
-                return null;
-            }
-            else
-            {
-                ScheduledEvent scheduledEvent = new ScheduledEvent();// ObjectPool.Get<ScheduledEvent>();
-                scheduledEvent.Reset();
-                scheduledEvent.RemainTime = delay;
-                scheduledEvent.Callback = callback;
-                _activeSchedulers.Add(scheduledEvent);
-
-                return scheduledEvent;
-            }
-        }
-
-        /// <summary>
-        /// Add a new event with an argumentto be executed in the future.
-        /// </summary>
-        /// <param name="delay">The delay from the current time to execute the event.</param>
-        /// <param name="callback">The delegate to execute after the specified delay.</param>
-        /// <param name="arg">The argument of the delegate.</param>
-        /// <returns>The ScheduledEvent instance, useful if the event should be cancelled.</returns>
-        public static ScheduledEvent Schedule(float delay, Action<object> callback, object arg)
-        {
-            if(Instance != null) 
-            {
-                return Instance.AddEventInternal(delay, callback, arg);
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Internal event to add a new event with an argumentto be executed in the future.
-        /// </summary>
-        /// <param name="delay">The delay from the current time to execute the event.</param>
-        /// <param name="callback">The delegate to execute after the specified delay.</param>
-        /// <param name="arg">The argument of the delegate.</param>
-        /// <returns>The ScheduledEvent instance, useful if the event should be cancelled.</returns>
-        private ScheduledEvent AddEventInternal(float delay, Action<object> callbackArg, object arg)
-        {
-            if( isActiveAndEnabled == false || callbackArg == null )
-                return null;
-            
-            if(delay <= 0)
-            {
-                callbackArg(arg);
-                return null;
-            } 
-            else
-            {
-                ScheduledEvent scheduledEvent = new ScheduledEvent();// ObjectPool.Get<ScheduledEvent>();
-                scheduledEvent.Reset();
-                scheduledEvent.RemainTime = delay;
-                scheduledEvent.CallbackWithArg = callbackArg;
-                scheduledEvent.Argument = arg;
-                _activeSchedulers.Add(scheduledEvent);
-
-                return scheduledEvent;
-            }
-        }
-
-        /// <summary>
-        /// Cancels an event.
-        /// </summary>
-        /// <param name="scheduledEvent">The event to cancel.</param>
-        public static void Cancel(ref ScheduledEvent scheduledEvent)
-        {
-            if( Instance != null ) 
-            {
-                Instance.CancelEventInternal(ref scheduledEvent);
-            }
-        }
-
-        /// <summary>
-        /// Internal method to cancel an event.
-        /// </summary>
-        /// <param name="scheduledEvent">The event to cancel.</param>
-        private void CancelEventInternal(ref ScheduledEvent scheduledEvent)
-        {
-            if(scheduledEvent != null && _activeSchedulers.Contains(scheduledEvent))
-            {
-                _activeSchedulers.Remove(scheduledEvent);
-                //ObjectPool.Return(scheduledEvent);
-                scheduledEvent = null;
-            }
-        }
-
-        /// <summary>
-        /// Executes an event with the specified index.
-        /// </summary>
-        /// <param name="index">The index of the event to execute.</param>
-        private void Execute(int index)
-        {
-            var activeEvent = _activeSchedulers[index];
-            // Remove the event from the list before the callback to prevent the callback from adding a new event and changing the order.
-            _activeSchedulers.RemoveAt(index);
-
-            if (activeEvent.Callback != null) {
-                activeEvent.Callback();
-            }
-            else {
-                activeEvent.CallbackWithArg(activeEvent.Argument);
-            }
-            //ObjectPool.Return(activeEvent);
-        }
-        #endregion
-
         void Update()
         {
-            // update schedulers
-            for( int i = _activeSchedulers.Count-1; i >= 0; --i )
-            {
-                _activeSchedulers[i].RemainTime -= Time.deltaTime;
-
-                if( _activeSchedulers[i].RemainTime <= 0f )
-                    Execute(i);
-            }
+            UpdateTimers();
 
             if (UpdateEvent != null)
             {
@@ -277,7 +439,7 @@ namespace Framework
                 }
                 catch (Exception e)
                 {
-                    Debuger.LogError("MonoHelper", "Update() Error:{0}\n{1}", e.Message, e.StackTrace);
+                    Debuger.LogError("Scheduler", "Update() Error:{0}\n{1}", e.Message, e.StackTrace);
                 }
             }
         }
@@ -292,7 +454,7 @@ namespace Framework
                 }
                 catch (Exception e)
                 {
-                    Debuger.LogError("MonoHelper", "LateUpdate() Error:{0}\n{1}", e.Message, e.StackTrace);
+                    Debuger.LogError("Scheduler", "LateUpdate() Error:{0}\n{1}", e.Message, e.StackTrace);
                 }
             }
         }
@@ -307,12 +469,13 @@ namespace Framework
                 }
                 catch (Exception e)
                 {
-                    Debuger.LogError("MonoHelper", "FixedUpdate() Error:{0}\n{1}", e.Message, e.StackTrace);
+                    Debuger.LogError("Scheduler", "FixedUpdate() Error:{0}\n{1}", e.Message, e.StackTrace);
                 }
             }
         }
 
         //===========================================================
+
         public static void DoStartCoroutine(IEnumerator routine)
         {
             if(Instance != null)
