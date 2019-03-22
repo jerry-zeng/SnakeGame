@@ -47,21 +47,26 @@ namespace Framework
         private int _waitingTimersCount = 0;
 
         [System.NonSerialized]
-        public float TimeThrehold = 1f;
+        public  float TimeThrehold = 1f;
         private float _minExecTimeOnWait = float.MaxValue;
-        private bool _hasPrepared = false;
+        private bool  _hasPrepared = false;
 
         private List<Timer> _timersToAdd = new List<Timer>();
         private uint _nextID = TIMER_START_ID;
         private bool _isRunning = false;
         private bool _cancelAll = false;
 
-
+        /// <summary>
+        /// Schedule a timer with the specified interval(delay), repeatTimes and callback.
+        /// </summary>
+        /// <param name="interval">Interval.</param>
+        /// <param name="repeatTimes">Repeat times.</param>
+        /// <param name="callback">Callback.</param>
         public static uint Schedule(float interval, uint repeatTimes, Action callback)
         {
             if(Instance != null) 
             {
-                return Instance.AddEventInternal(interval, repeatTimes, callback);
+                return Instance.ScheduleInternal(interval, repeatTimes, callback);
             }
             return 0;
         }
@@ -76,13 +81,7 @@ namespace Framework
             return Schedule(delay, 1, callback);
         }
 
-        /// <summary>
-        /// Internal method to add a new event to be executed in the future.
-        /// </summary>
-        /// <param name="delay">The delay from the current time to execute the event.</param>
-        /// <param name="callback">The delegate to execute after the specified delay.</param>
-        /// <returns>The ScheduledEvent instance, useful if the event should be cancelled.</returns>
-        private uint AddEventInternal(float interval, uint repeatTimes, Action callback)
+        private uint ScheduleInternal(float interval, uint repeatTimes, Action callback)
         {
             // Don't add the event if the game hasn't started.
             if( isActiveAndEnabled == false || callback == null )
@@ -119,23 +118,19 @@ namespace Framework
         }
 
         /// <summary>
-        /// Cancels an event.
+        /// Unschedule the specified id.
         /// </summary>
-        /// <param name="id">The timer id to cancel.</param>
-        public static bool Cancel(uint id)
+        /// <param name="id">Identifier.</param>
+        public static bool Unschedule(uint id)
         {
             if( Instance != null ) 
             {
-                return Instance.CancelEventInternal(id);
+                return Instance.UnscheduleInternal(id);
             }
             return false;
         }
 
-        /// <summary>
-        /// Internal method to cancel an event.
-        /// </summary>
-        /// <param name="id">The timer id to cancel.</param>
-        private bool CancelEventInternal(uint id)
+        private bool UnscheduleInternal(uint id)
         {
             if( id == 0 )
                 return false;
@@ -167,8 +162,10 @@ namespace Framework
             return false;
         }
 
-
-        public void CancelAll()
+        /// <summary>
+        /// Unschedules all timers.
+        /// </summary>
+        public void UnscheduleAll()
         {
             if( _isRunning ){
                 _cancelAll = true;
@@ -368,7 +365,7 @@ namespace Framework
 
             //async
             if( _cancelAll )
-                CancelAll();
+                UnscheduleAll();
         }
         #endregion
 
