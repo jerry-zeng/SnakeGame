@@ -17,6 +17,7 @@ namespace Framework
         }
 
         private string RelativePath;
+        //private AssetBundleManifest _manifest;
         private AssetBundleLoader[] _depLoaders;
         private Dictionary<string, Object> _loadedAssets;
 
@@ -95,6 +96,9 @@ namespace Framework
             {
                 assetBundle = AssetBundle.LoadFromFile(abPath);
             }
+
+            //_manifest = assetBundle.LoadAsset("AssetBundleManifest") as AssetBundleManifest;
+
             OnFinish(assetBundle);
         }
 
@@ -134,6 +138,8 @@ namespace Framework
         protected override void DoDispose()
         {
             base.DoDispose();
+
+            //_manifest = null;
 
             if( _depLoaders != null )
             {
