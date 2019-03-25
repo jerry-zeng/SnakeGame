@@ -56,7 +56,7 @@ namespace Framework
             }
             else
             {
-                Destroy(gameObject);
+                Destroy(this);
             }
         }
 

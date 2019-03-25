@@ -51,6 +51,11 @@ namespace GamePlay
             }
         }
 
+        public void SetFocusSnaker(Snaker snaker)
+        {
+            _focusSnaker = snaker;
+        }
+
         void LateUpdate()
         {
             if( BattleEngine.Instance.IsRunning )

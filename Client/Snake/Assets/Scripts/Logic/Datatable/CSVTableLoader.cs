@@ -359,7 +359,7 @@ public sealed class CSVTableLoader
         string filePath = Application.streamingAssetsPath + "/" + ("DataTable/" + fileName + FileExtension);
         strs = File.ReadAllText(filePath);
 #else
-        string filePath = AssetUrlUtils.GetStreamingAssetURL( "DataTable/" + fileName + FileExtension );
+        string filePath = AssetConfig.GetStreamingAssetURL( "DataTable/" + fileName + FileExtension );
 
         WWW www = new WWW(filePath);
         while( !www.isDone ){}

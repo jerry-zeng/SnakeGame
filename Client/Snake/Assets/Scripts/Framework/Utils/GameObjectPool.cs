@@ -15,7 +15,7 @@ namespace Framework
         public override T Get()
         {
             if( _prefab == null ){
-                Debug.LogWarning("No object in pool, you'd better to set a prefab to enable pool instantiate auto.");
+                Debuger.LogWarning("No object in pool, you'd better to set a prefab to enable pool instantiate auto.");
                 return base.Get();
             }
 

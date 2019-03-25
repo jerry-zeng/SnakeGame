@@ -7,73 +7,41 @@ namespace Framework
     /// <summary>
     /// Adds a generic event system. The event system allows objects to register, unregister, and execute events on a particular object.
     /// </summary>
-    public class EventManager : ServiceModule<EventManager>
+    public sealed class EventManager : ServiceModule<EventManager>
     {
+        private const string LOG_TAG = "EventManager";
+
+        public bool ShowLog { get; set; }
+
         // Internal variables
-        private Dictionary<object, Dictionary<string, Delegate>> _eventTable = new Dictionary<object, Dictionary<string, Delegate>>();
-        private Dictionary<string, Delegate> _globalEventTable = new Dictionary<string, Delegate>();
+        private Dictionary<string, Delegate> _eventTable;
 
         protected override void Init()
         {
             base.Init();
 
-            _eventTable.Clear();
-            _globalEventTable.Clear();
+            ShowLog = true;
+            _eventTable = new Dictionary<string, Delegate>();
         }
 
         #region Internel Implements
         private void RegisterEvent(string eventName, Delegate handler)
         {
             Delegate prevHandlers;
-            if (_globalEventTable.TryGetValue(eventName, out prevHandlers)) {
-                _globalEventTable[eventName] = Delegate.Combine(prevHandlers, handler);
+            if (_eventTable.TryGetValue(eventName, out prevHandlers)) {
+                _eventTable[eventName] = Delegate.Combine(prevHandlers, handler);
             }
             else {
-                _globalEventTable.Add(eventName, handler);
-            }
-        }
-
-        private void RegisterEvent(object obj, string eventName, Delegate handler)
-        {
-            if (obj == null) {
-                Debuger.LogError("EventManager.RegisterEvent error: target object cannot be null.");
-                return;
-            }
-
-            Dictionary<string, Delegate> handlers;
-            if(!_eventTable.TryGetValue(obj, out handlers)) {
-                handlers = new Dictionary<string, Delegate>();
-                _eventTable.Add(obj, handlers);
-            }
-
-            Delegate prevHandlers;
-            if(handlers.TryGetValue(eventName, out prevHandlers)) {
-                handlers[eventName] = Delegate.Combine(prevHandlers, handler);
-            }
-            else {
-                handlers.Add(eventName, handler);
+                _eventTable.Add(eventName, handler);
             }
         }
 
         private Delegate GetDelegate(string eventName)
         {
             Delegate handler;
-            if(_globalEventTable.TryGetValue(eventName, out handler)) 
+            if(_eventTable.TryGetValue(eventName, out handler)) 
             {
                 return handler;
-            }
-            return null;
-        }
-
-        private Delegate GetDelegate(object obj, string eventName)
-        {
-            Dictionary<string, Delegate> handlers;
-            if (_eventTable.TryGetValue(obj, out handlers)) 
-            {
-                Delegate handler;
-                if (handlers.TryGetValue(eventName, out handler)) {
-                    return handler;
-                }
             }
             return null;
         }
@@ -81,46 +49,25 @@ namespace Framework
         private void UnregisterEvent(string eventName, Delegate handler)
         {
             Delegate prevHandlers;
-            if(_globalEventTable.TryGetValue(eventName, out prevHandlers))
+            if( _eventTable.TryGetValue(eventName, out prevHandlers) )
             {
-                _globalEventTable[eventName] = Delegate.Remove(prevHandlers, handler);
+                _eventTable[eventName] = Delegate.Remove(prevHandlers, handler);
             }
+            else
+                LogWarning( "Not found event by {0}", eventName );
         }
 
-        private void UnregisterEvent(object obj, string eventName, Delegate handler)
+        private void LogWarning( string format, params object[] args )
         {
-            if(obj == null) {
-                Debuger.LogError("EventManager.UnregisterEvent error: target object cannot be null.");
-                return;
-            }
-
-            Dictionary<string, Delegate> handlers;
-            if (_eventTable.TryGetValue(obj, out handlers))
-            {
-                Delegate prevHandlers;
-                if (handlers.TryGetValue(eventName, out prevHandlers)) {
-                    handlers[eventName] = Delegate.Remove(prevHandlers, handler);
-                }
+            if( ShowLog ){
+                Debuger.LogWarning(LOG_TAG, format, args);
             }
         }
         #endregion
 
-
-        public void ClearEventTable()
-        {
-            _eventTable.Clear();
-            SendEvent("OnEventTableClear");
-        }
-
-        public void ClearGlobalEventTable()
-        {
-            _globalEventTable.Clear();
-        }
-
         public void ClearAll()
         {
             _eventTable.Clear();
-            _globalEventTable.Clear();
         }
 
         #region Register Methods
@@ -129,19 +76,9 @@ namespace Framework
             RegisterEvent(eventName, (Delegate)handler);
         }
 
-        public void RegisterEvent(object obj, string eventName, Action handler)
-        {
-            RegisterEvent(obj, eventName, (Delegate)handler);
-        }
-
         public void RegisterEvent<T>(string eventName, Action<T> handler)
         {
             RegisterEvent(eventName, (Delegate)handler);
-        }
-
-        public void RegisterEvent<T>(object obj, string eventName, Action<T> handler)
-        {
-            RegisterEvent(obj, eventName, (Delegate)handler);
         }
 
         public void RegisterEvent<T, U>(string eventName, Action<T, U> handler)
@@ -149,19 +86,9 @@ namespace Framework
             RegisterEvent(eventName, (Delegate)handler);
         }
 
-        public void RegisterEvent<T, U>(object obj, string eventName, Action<T, U> handler)
-        {
-            RegisterEvent(obj, eventName, (Delegate)handler);
-        }
-
         public void RegisterEvent<T, U, V>(string eventName, Action<T, U, V> handler)
         {
             RegisterEvent(eventName, (Delegate)handler);
-        }
-
-        public void RegisterEvent<T, U, V>(object obj, string eventName, Action<T, U, V> handler)
-        {
-            RegisterEvent(obj, eventName, (Delegate)handler);
         }
 
         public void RegisterEvent<T, U, V, W>(string eventName, Action<T, U, V, W> handler)
@@ -169,9 +96,9 @@ namespace Framework
             RegisterEvent(eventName, (Delegate)handler);
         }
 
-        public void RegisterEvent<T, U, V, W>(object obj, string eventName, Action<T, U, V, W> handler)
+        public void RegisterEvent(string eventName, Action<object[]> handler)
         {
-            RegisterEvent(obj, eventName, (Delegate)handler);
+            RegisterEvent(eventName, (Delegate)handler);
         }
         #endregion
 
@@ -181,19 +108,9 @@ namespace Framework
             UnregisterEvent(eventName, (Delegate)handler);
         }
 
-        public void UnregisterEvent(object obj, string eventName, Action handler)
-        {
-            UnregisterEvent(obj, eventName, (Delegate)handler);
-        }
-
         public void UnregisterEvent<T>(string eventName, Action<T> handler)
         {
             UnregisterEvent(eventName, (Delegate)handler);
-        }
-
-        public void UnregisterEvent<T>(object obj, string eventName, Action<T> handler)
-        {
-            UnregisterEvent(obj, eventName, (Delegate)handler);
         }
 
         public void UnregisterEvent<T, U>(string eventName, Action<T, U> handler)
@@ -201,19 +118,9 @@ namespace Framework
             UnregisterEvent(eventName, (Delegate)handler);
         }
 
-        public void UnregisterEvent<T, U>(object obj, string eventName, Action<T, U> handler)
-        {
-            UnregisterEvent(obj, eventName, (Delegate)handler);
-        }
-
         public void UnregisterEvent<T, U, V>(string eventName, Action<T, U, V> handler)
         {
             UnregisterEvent(eventName, (Delegate)handler);
-        }
-
-        public void UnregisterEvent<T, U, V>(object obj, string eventName, Action<T, U, V> handler)
-        {
-            UnregisterEvent(obj, eventName, (Delegate)handler);
         }
 
         public void UnregisterEvent<T, U, V, W>(string eventName, Action<T, U, V, W> handler)
@@ -221,9 +128,9 @@ namespace Framework
             UnregisterEvent(eventName, (Delegate)handler);
         }
 
-        public void UnregisterEvent<T, U, V, W>(object obj, string eventName, Action<T, U, V, W> handler)
+        public void UnregisterEvent(string eventName, Action<object[]> handler)
         {
-            UnregisterEvent(obj, eventName, (Delegate)handler);
+            UnregisterEvent(eventName, (Delegate)handler);
         }
         #endregion
 
@@ -234,14 +141,8 @@ namespace Framework
             if (handler != null) {
                 handler();
             }
-        }
-
-        public void SendEvent(object obj, string eventName)
-        {
-            var handler = GetDelegate(obj, eventName) as Action;
-            if (handler != null) {
-                handler();
-            }
+            else
+                LogWarning( "Not found any event handler (Action) by {0}", eventName );
         }
 
         public void SendEvent<T>(string eventName, T arg1)
@@ -250,14 +151,8 @@ namespace Framework
             if (handler != null) {
                 handler(arg1);
             }
-        }
-
-        public void SendEvent<T>(object obj, string eventName, T arg1)
-        {
-            var handler = GetDelegate(obj, eventName) as Action<T>;
-            if (handler != null) {
-                handler(arg1);
-            }
+            else
+                LogWarning( "Not found any event handler (Action<T>) by {0}", eventName );
         }
 
         public void SendEvent<T, U>(string eventName, T arg1, U arg2)
@@ -266,14 +161,8 @@ namespace Framework
             if (handler != null) {
                 handler(arg1, arg2);
             }
-        }
-
-        public void SendEvent<T, U>(object obj, string eventName, T arg1, U arg2)
-        {
-            var handler = GetDelegate(obj, eventName) as Action<T, U>;
-            if (handler != null) {
-                handler(arg1, arg2);
-            }
+            else
+                LogWarning( "Not found any event handler (Action<T, U>) by {0}", eventName );
         }
 
         public void SendEvent<T, U, V>(string eventName, T arg1, U arg2, V arg3)
@@ -282,14 +171,8 @@ namespace Framework
             if (handler != null) {
                 handler(arg1, arg2, arg3);
             }
-        }
-
-        public void SendEvent<T, U, V>(object obj, string eventName, T arg1, U arg2, V arg3)
-        {
-            var handler = GetDelegate(obj, eventName) as Action<T, U, V>;
-            if (handler != null) {
-                handler(arg1, arg2, arg3);
-            }
+            else
+                LogWarning( "Not found any event handler (Action<T, U, V>) by {0}", eventName );
         }
 
         public void SendEvent<T, U, V, W>(string eventName, T arg1, U arg2, V arg3, W arg4)
@@ -298,14 +181,18 @@ namespace Framework
             if (handler != null) {
                 handler(arg1, arg2, arg3, arg4);
             }
+            else
+                LogWarning( "Not found any event handler (Action<T, U, V, W>) by {0}", eventName );
         }
 
-        public void SendEvent<T, U, V, W>(object obj, string eventName, T arg1, U arg2, V arg3, W arg4)
+        public void SendEvent(string eventName, object[] args)
         {
-            var handler = GetDelegate(obj, eventName) as Action<T, U, V, W>;
+            var handler = GetDelegate(eventName) as Action<object[]>;
             if (handler != null) {
-                handler(arg1, arg2, arg3, arg4);
+                handler(args);
             }
+            else
+                LogWarning( "Not found any event handler (Action<object[]>) by {0}", eventName );
         }
         #endregion
 

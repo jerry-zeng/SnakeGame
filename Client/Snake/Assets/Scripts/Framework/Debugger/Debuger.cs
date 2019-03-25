@@ -1,29 +1,4 @@
-﻿////////////////////////////////////////////////////////////////////
-//                            _ooOoo_                             //
-//                           o8888888o                            //
-//                           88" . "88                            //
-//                           (| ^_^ |)                            //
-//                           O\  =  /O                            //
-//                        ____/`---'\____                         //
-//                      .'  \\|     |//  `.                       //
-//                     /  \\|||  :  |||//  \                      //
-//                    /  _||||| -:- |||||-  \                     //
-//                    |   | \\\  -  /// |   |                     //
-//                    | \_|  ''\---/''  |   |                     //
-//                    \  .-\__  `-`  ___/-. /                     //
-//                  ___`. .'  /--.--\  `. . ___                   //
-//                ."" '<  `.___\_<|>_/___.'  >'"".                //
-//              | | :  `- \`.;`\ _ /`;.`/ - ` : | |               //
-//              \  \ `-.   \_ __\ /__ _/   .-` /  /               //
-//        ========`-.____`-.___\_____/___.-`____.-'========       //
-//                             `=---='                            //
-//        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^      //
-//            佛祖保佑       无BUG        不修改                   //
-////////////////////////////////////////////////////////////////////
-/*
- * 描述：
- * 作者：slicol
-*/
+﻿
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -133,7 +108,7 @@ namespace Framework
             LogToFile("[I]" + message);
         }
 
-
+        [Conditional("ENABLE_LOG")]
         public static void LogWarning(string message)
         {
             message = GetLogTime() + message;
@@ -141,6 +116,7 @@ namespace Framework
             LogToFile("[W]" + message);
         }
 
+        [Conditional("ENABLE_LOG")]
         public static void LogWarning(string tag, string message)
         {
             message = GetLogText(tag, "", message);
@@ -148,6 +124,7 @@ namespace Framework
             LogToFile("[W]" + message);
         }
 
+        [Conditional("ENABLE_LOG")]
         public static void LogWarning(string tag, string format, params object[] args)
         {
             string message = GetLogText(tag, "", string.Format(format, args));
@@ -155,7 +132,7 @@ namespace Framework
             LogToFile("[W]" + message);
         }
 
-
+        [Conditional("ENABLE_LOG")]
         public static void LogError(string message)
         {
             message = GetLogTime() + message;
@@ -163,6 +140,7 @@ namespace Framework
             LogToFile("[E]" + message,true);
         }
 
+        [Conditional("ENABLE_LOG")]
         public static void LogError(string tag, string message)
         {
             message = GetLogText(tag, "", message);
@@ -170,6 +148,7 @@ namespace Framework
             LogToFile("[E]" + message,true);
         }
 
+        [Conditional("ENABLE_LOG")]
         public static void LogError(string tag, string format, params object[] args)
         {
             string message = GetLogText(tag, "", string.Format(format, args));
