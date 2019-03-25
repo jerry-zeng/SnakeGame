@@ -77,11 +77,6 @@ namespace Framework
             get { return _maxRequestTask; } set{ _maxRequestTask = value; } 
         }
 
-        void Awake()
-        {
-            
-        }
-
         void Update()
         {
             if( _ioTaskList.Count > 0 )

@@ -18,7 +18,7 @@ namespace Framework
 
         private string RelativePath;
         private AssetBundleLoader[] _depLoaders;
-        private List<Object> _loadedAssets;
+        private Dictionary<string, Object> _loadedAssets;
 
 
 #region Manifest
@@ -100,26 +100,56 @@ namespace Framework
 
         /// 原以为，每次都通过getter取一次assetBundle会有序列化解压问题，会慢一点，后用AddWatch调试过，发现如果把.assetBundle放到Dictionary里缓存，查询会更慢
         /// 因为，估计.assetBundle是一个纯Getter，没有做序列化问题。（不保证.mainAsset）
-        public void PushLoadedAsset(Object getAsset)
+        public void PushLoadedAsset(string assetName, Object asset)
         {
             if (_loadedAssets == null)
-                _loadedAssets = new List<Object>();
-            _loadedAssets.Add(getAsset);
+                _loadedAssets = new Dictionary<string, Object>();
+            
+            _loadedAssets[assetName] = asset;
+        }
+        public void PushLoadedAssets(Object[] assets)
+        {
+            foreach( Object obj in assets )
+                PushLoadedAsset(obj.name, obj);
+        }
+
+        public Object GetAsset(string assetName)
+        {
+            if (_loadedAssets == null)
+                _loadedAssets = new Dictionary<string, Object>();
+
+            Object obj;
+            if( _loadedAssets.TryGetValue(assetName, out obj) ){
+                return obj;
+            }
+            else{
+                if( assetBundle != null ){
+                    obj = assetBundle.LoadAsset(assetName);
+                    PushLoadedAsset(assetName, obj);
+                }
+                return obj;
+            }
         }
 
         protected override void DoDispose()
         {
             base.DoDispose();
 
-            foreach (var depLoader in _depLoaders)
+            if( _depLoaders != null )
             {
-                depLoader.Release();
+                foreach( var depLoader in _depLoaders )
+                {
+                    depLoader.Release();
+                }
             }
             _depLoaders = null;
 
-            foreach (var loadedAsset in _loadedAssets)
+            if( _loadedAssets != null )
             {
-                Object.DestroyImmediate(loadedAsset, true);
+                foreach( var kvs in _loadedAssets )
+                {
+                    Object.DestroyImmediate(kvs.Value, true);
+                }
             }
             _loadedAssets.Clear();
         }

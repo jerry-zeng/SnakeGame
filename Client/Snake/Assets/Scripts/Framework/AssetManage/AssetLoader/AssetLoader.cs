@@ -122,7 +122,7 @@ namespace Framework
                     if (loadMode == LoadMode.Sync)
                     {
                         getAsset = assetBundle.LoadAsset(assetName);
-                        _bundleLoader.PushLoadedAsset(getAsset);
+                        _bundleLoader.PushLoadedAsset(assetName, getAsset);
                     }
                     else
                     {
@@ -133,7 +133,7 @@ namespace Framework
                         }
 
                         getAsset = request.asset;
-                        _bundleLoader.PushLoadedAsset(getAsset);
+                        _bundleLoader.PushLoadedAsset(assetName, getAsset);
                     }
                 }
                 else
