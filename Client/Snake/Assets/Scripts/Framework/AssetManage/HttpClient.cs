@@ -47,6 +47,32 @@ namespace Framework
 
             public Task ioTask;//  下载时有io任务
             public UnityWebRequest request;
+
+
+            private bool _isClosed = false;
+            public bool IsClosed 
+            {
+                get { return _isClosed; } 
+                set { _isClosed = value; }
+            }
+
+            public float Progress
+            {
+                get
+                {
+                    if( _isClosed )
+                        return 1f;
+
+                    if( request.isNetworkError || request.isHttpError )
+                        return 0f;
+
+                    float n = request.downloadProgress;
+                    if( n < 0f )
+                        return 0f;
+
+                    return n;
+                }
+            }
         }
 
 
@@ -167,11 +193,12 @@ namespace Framework
             request.Dispose();
         }
 
-        public void CancelDownload( HttpDownLoader downLoadHandle )
+        public void CancelRequestTask( RequestTask task )
         {
-            if( downLoadHandle == null || downLoadHandle.IsClosed ) return;
+            if( task == null || task.IsClosed ) return;
 
-            downLoadHandle.Request.Abort();
+            task.request.Abort();
+            task.IsClosed = true;
         }
 
         public void ClearAllTask()
@@ -182,12 +209,15 @@ namespace Framework
                 {
                     if( !requestTask.request.isDone )
                         requestTask.request.Abort();
-                    else
-                        DisposeWebRequesat( requestTask.request );
+                    else{
+                        DisposeWebRequesat(requestTask.request);
+                        requestTask.IsClosed = true;
+                    }
                 }
                 else
                 {
                     DisposeWebRequesat( requestTask.request );
+                    requestTask.IsClosed = true;
                 }
             }
             _httpRequestList.Clear();
@@ -315,7 +345,7 @@ namespace Framework
             }
         }
 
-        public HttpDownLoader DownloadFile( string url, string saveFileFullPath, bool needUnZip, int timeout, HttpCallback callback, bool first = false, string matchMd5 = null )
+        public RequestTask DownloadFile( string url, string saveFileFullPath, bool needUnZip, int timeout, HttpCallback callback, bool first = false, string matchMd5 = null )
         {
             if( string.IsNullOrEmpty(saveFileFullPath) ){
                 Debug.LogWarning("No fullFilePath, is there any error?");
@@ -326,15 +356,11 @@ namespace Framework
             {
                 request.timeout = timeout;
             }
-            AddRequestTask( request, url, saveFileFullPath, needUnZip, callback, first, false, matchMd5 );
 
-            HttpDownLoader handler = new HttpDownLoader( request );
-            _disposeWebRequestCaster += handler.Close;
-
-            return handler;
+            return AddRequestTask( request, url, saveFileFullPath, needUnZip, callback, first, false, matchMd5 );
         }
 
-        public HttpDownLoader DownLoadAssetBundle( string url, string saveFileFullPath, int timeout, HttpCallback callback, bool first = true, string matchMd5 = null )
+        public RequestTask DownLoadAssetBundle( string url, string saveFileFullPath, int timeout, HttpCallback callback, bool first = true, string matchMd5 = null )
         {
             if( string.IsNullOrEmpty(saveFileFullPath) ){
                 Debug.LogError("No fullFilePath, cancel the downloading op");
@@ -346,12 +372,8 @@ namespace Framework
             {
                 request.timeout = timeout;
             }
-            AddRequestTask( request, url, saveFileFullPath, false, callback, first, true, matchMd5 );
 
-            HttpDownLoader handler = new HttpDownLoader( request );
-            _disposeWebRequestCaster += handler.Close;
-
-            return handler;
+            return AddRequestTask( request, url, saveFileFullPath, false, callback, first, true, matchMd5 );
         }
 
 
@@ -596,8 +618,7 @@ namespace Framework
             return null;
         }
 
-
-        private void AddRequestTask( UnityWebRequest request, string url, string fullFilePath, bool needUnZip, HttpCallback callback, bool first = false, bool isAssetBundle = false, string matchMd5 = null )
+        RequestTask AddRequestTask( UnityWebRequest request, string url, string fullFilePath, bool needUnZip, HttpCallback callback, bool first = false, bool isAssetBundle = false, string matchMd5 = null )
         {
             RequestTask requestTask = new RequestTask();
             requestTask.request = request;
@@ -615,11 +636,14 @@ namespace Framework
                         if( isAssetBundle )
                         {
                             OnRequestAssetBundleComplete(self.request, startTime, fullFilePath, callback, matchMd5);
+                            self.IsClosed = true;
                             self.status = RequestTask.EStatus.Completed;
                         }
                         else
                         {
                             Task task = OnRequestComplete(self.request, startTime, needUnZip, fullFilePath, callback, matchMd5);
+                            self.IsClosed = true;
+
                             if( task == null )
                             {
                                 self.status = RequestTask.EStatus.Completed;
@@ -646,6 +670,8 @@ namespace Framework
             {
                 _httpRequestList.Add( requestTask );
             }
+
+            return requestTask;
         }
 
     }

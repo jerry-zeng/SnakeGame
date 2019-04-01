@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Framework
 {
-    public class AssetManager : MonoSingleton<AssetManager> 
+    public sealed class AssetManager : MonoSingleton<AssetManager> 
     {
         
 

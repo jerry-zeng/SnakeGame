@@ -48,7 +48,7 @@ namespace Framework
         }
 
 
-        protected override void Init(string url, LoadMode loadMode, params object[] args)
+        public override void Init(string url, LoadMode loadMode, params object[] args)
         {
             // TODO: 添加扩展名
             //if (!IsEditorLoadAsset)
@@ -153,6 +153,9 @@ namespace Framework
 
             if (Application.isEditor)
             {
+                if (getAsset != null)
+                    XXLoadedAssetDebugger.Create(getAsset.GetType().Name, Url, getAsset as Object);
+
                 // 编辑器环境下，如果遇到GameObject，对Shader进行Fix
                 if (getAsset is GameObject)
                 {

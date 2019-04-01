@@ -35,49 +35,6 @@ namespace Framework
             GC,
         }
 
-#region 垃圾回收 Garbage Collect
-        /// <summary>
-        /// Loader延迟Dispose
-        /// </summary>
-        protected const float LoaderDisposeTime = 0f;
-
-        /// <summary>
-        /// 间隔多少秒做一次GC(在AutoNew时)
-        /// </summary>
-        public static float GcTimeInterval
-        {
-            get
-            {
-                if (Application.platform == RuntimePlatform.WindowsEditor ||
-                    Application.platform == RuntimePlatform.OSXEditor)
-                    return 1f;
-
-                return Debug.isDebugBuild ? 5f : 10f;
-            }
-        }
-
-        /// <summary>
-        /// 上次做GC的时间
-        /// </summary>
-        protected static float _lastGcTime = 0f;
-
-        protected static readonly Dictionary<Type, Dictionary<string, BaseLoader>> _loadersPool =
-            new Dictionary<Type, Dictionary<string, BaseLoader>>();
-
-        /// <summary>
-        /// 缓存起来要删掉的，供DoGarbageCollect函数用, 避免重复的new List
-        /// </summary>
-        protected static readonly List<BaseLoader> CacheLoaderToRemoveFromUnUsed =
-            new List<BaseLoader>();
-
-        /// <summary>
-        /// 进行垃圾回收
-        /// </summary>
-        internal static readonly Dictionary<BaseLoader, float> UnuseLoaders =
-            new Dictionary<BaseLoader, float>();
-
-#endregion
-
 
         public string Url { get; protected set; }
 
@@ -119,7 +76,7 @@ namespace Framework
         /// <summary>
         /// RefCount 为 0，进入预备Disposed状态
         /// </summary>
-        protected bool IsReadyDisposed { get; set; }
+        public bool IsReadyDisposed { get; set; }
 
         /// <summary>
         /// 是否可用
@@ -128,6 +85,8 @@ namespace Framework
         {
             get { return !IsError && ResultObject != null && !IsReadyDisposed; }
         }
+
+        public bool IsForceNew;
 
         /// <summary>
         /// 用时
@@ -143,168 +102,46 @@ namespace Framework
             }
         }
 
+        #region Debug
+        public Action<string> SetDescEvent;
+
+        private string _desc = "";
+
+        /// <summary>
+        /// Gets or sets the desc. Used for debugger.
+        /// </summary>
+        /// <value>The desc.</value>
+        public virtual string Desc
+        {
+            get { return _desc; }
+            set
+            {
+                _desc = value;
+                if (SetDescEvent != null)
+                    SetDescEvent(_desc);
+            }
+        }
+
+        public Action DisposeEvent;
+        #endregion
 
         protected readonly List<LoaderCallback> _callbacks = new List<LoaderCallback>();
         protected float _initTime = -1f;
         protected float _finishTime = -1f;
 
 
-#region Static Functions
-        protected static float GetCurrentTime()
+        public static T Load<T>(string url, LoadMode loadMode = LoadMode.Async, LoaderCallback callback = null, 
+                                bool forceCreateNew = false, params object[] initArgs) where T : BaseLoader, new()
         {
-            return Time.time;
+            return LoaderCache.AutoNew<T>(url, loadMode, callback, forceCreateNew, initArgs);
         }
 
-        protected static int GetCount<T>()
-        {
-            return GetTypeDict(typeof(T)).Count;
-        }
-
-        protected static Dictionary<string, BaseLoader> GetTypeDict(Type type)
-        {
-            Dictionary<string, BaseLoader> typesDict;
-            if (!_loadersPool.TryGetValue(type, out typesDict))
-            {
-                typesDict = new Dictionary<string, BaseLoader>();
-                _loadersPool.Add( type, typesDict );
-            }
-            return typesDict;
-        }
-
-        public static int GetRefCount<T>(string url)
-        {
-            Dictionary<string, BaseLoader> dict = GetTypeDict(typeof(T));
-            BaseLoader loader;
-            if (dict.TryGetValue(url, out loader))
-            {
-                return loader.RefCount;
-            }
-            return 0;
-        }
-
-        /// <summary>
-        /// 统一的对象工厂
-        /// </summary>
-
-        protected static T AutoNew<T>(string url, LoadMode loadMode, LoaderCallback callback, params object[] initArgs) where T : BaseLoader, new()
-        {
-            if (string.IsNullOrEmpty(url))
-            {
-                Debuger.LogError(LOG_TAG, "[{0}:AutoNew] url为空", typeof(T));
-            }
-
-            Dictionary<string, BaseLoader> typesDict = GetTypeDict(typeof(T));
-            BaseLoader loader;
-
-            if ( !typesDict.TryGetValue(url, out loader) )
-            {
-                loader = new T();
-                typesDict[url] = loader;
-
-                loader.Init(url, loadMode, initArgs);
-            }
-            else
-            {
-                if (loader.RefCount < 0)
-                {
-                    //loader.IsDisposed = false;  // 转死回生的可能
-                    Debuger.LogError(LOG_TAG, "Error RefCount!");
-                }
-            }
-
-            loader.RefCount++;
-
-            // RefCount++了，重新激活，在队列中准备清理的Loader
-            if (UnuseLoaders.ContainsKey(loader))
-            {
-                UnuseLoaders.Remove(loader);
-                loader.Revive();
-            }
-
-            loader.AddCallback(callback);
-
-            return loader as T;
-        }
-
-        protected static void ReturnToPool<T>(T loader) where T : BaseLoader
-        {
-            if( loader == null ) return;
-
-            Dictionary<string, BaseLoader> typesDict = GetTypeDict(typeof(T));
-            typesDict[loader.Url] = loader;
-        }
-
-        public static T Load<T>(string url, LoadMode loadMode = LoadMode.Async, LoaderCallback callback = null) where T : BaseLoader, new()
-        {
-            return AutoNew<T>(url, loadMode, callback);
-        }
-
-        /// <summary>
-        /// 是否进行垃圾收集
-        /// </summary>
-        public static void CheckGcCollect()
-        {
-            float curTime = GetCurrentTime();
-            if( curTime - _lastGcTime >= GcTimeInterval)
-            {
-                DoGarbageCollect(curTime);
-                _lastGcTime = curTime;
-            }
-        }
-
-        /// <summary>
-        /// 进行垃圾回收
-        /// </summary>
-        internal static void DoGarbageCollect(float curTime)
-        {
-            foreach (var kv in UnuseLoaders)
-            {
-                if (curTime - kv.Value >= LoaderDisposeTime)
-                {
-                    CacheLoaderToRemoveFromUnUsed.Add(kv.Key);
-                }
-            }
-
-            for (var i = CacheLoaderToRemoveFromUnUsed.Count - 1; i >= 0; i--)
-            {
-                try
-                {
-                    BaseLoader loader = CacheLoaderToRemoveFromUnUsed[i];
-                    CacheLoaderToRemoveFromUnUsed.RemoveAt(i);
-
-                    UnuseLoaders.Remove(loader);
-
-                    loader.Dispose();
-                    ReturnToPool(loader);
-                }
-                catch (Exception e)
-                {
-                    Debuger.LogError(LOG_TAG, e.Message);
-                }
-            }
-
-            if (CacheLoaderToRemoveFromUnUsed.Count > 0)
-            {
-                Debuger.LogError(LOG_TAG, "[DoGarbageCollect] CacheLoaderToRemoveFromUnUsed muse be empty!!");
-            }
-        }
-
-        /// <summary>
-        /// Clears the loader pool.
-        /// </summary>
-        public static void ClearPool()
-        {
-            _loadersPool.Clear();
-        }
-#endregion
-
-
-        protected BaseLoader()
+        public BaseLoader()
         {
             RefCount = 0;
         }
 
-        protected virtual void Init(string url, LoadMode loadMode, params object[] args)
+        public virtual void Init(string url, LoadMode loadMode, params object[] args)
         {
             Url = url;
             this.loadMode = loadMode;
@@ -317,10 +154,15 @@ namespace Framework
             IsReadyDisposed = false;
         }
 
+        public virtual void AddRef()
+        {
+            RefCount++;
+        }
+
         /// <summary>
         /// 复活
         /// </summary>
-        protected virtual void Revive()
+        public virtual void Revive()
         {
             IsReadyDisposed = false; // 复活！
         }
@@ -367,7 +209,7 @@ namespace Framework
         /// 在IsFinisehd后执行的回调
         /// </summary>
         /// <param name="callback"></param>
-        protected void AddCallback(LoaderCallback callback)
+        public void AddCallback(LoaderCallback callback)
         {
             if( callback == null ) return;
 
@@ -401,7 +243,7 @@ namespace Framework
             if (RefCount <= 0)
             {
                 // 加入队列，准备Dispose
-                UnuseLoaders[this] = GetCurrentTime();
+                LoaderCache.AddUnusedLoader(this);
 
                 IsReadyDisposed = true;
                 OnReadyDisposed();
@@ -419,8 +261,21 @@ namespace Framework
         /// <summary>
         /// Dispose是有引用检查的， DoDispose一般用于继承重写
         /// </summary>
-        protected void Dispose()
+        public void Dispose()
         {
+            if (DisposeEvent != null)
+                DisposeEvent();
+            DisposeEvent = null;
+
+            if (!IsForceNew)
+            {
+                bool bRemove = LoaderCache.RemoveLoader(this);
+                if (!bRemove)
+                {
+                    Debuger.LogWarning("[{0}:Dispose], No Url: {1}, Cur RefCount: {2}", GetType().Name, Url, RefCount);
+                }
+            }
+
             if( IsCompleted ){
                 DoDispose();
             }
@@ -433,6 +288,8 @@ namespace Framework
         {
             RefCount = 0;
             Init(null, loadMode);
+
+            SetDescEvent = null;
         }
 
         /// <summary>

@@ -26,7 +26,7 @@ namespace Framework
             }
         }
 
-        protected override void Init(string url, LoadMode loadMode, params object[] args)
+        public override void Init(string url, LoadMode loadMode, params object[] args)
         {
             base.Init(url, loadMode, args);
 
@@ -46,10 +46,16 @@ namespace Framework
                 }
 
                 Object instance = Object.Instantiate((Object)asset);
+
+                if (Application.isEditor)
+                {
+                    XXLoadedAssetDebugger.Create("AssetCopy", url, instance);
+                }
+
                 OnFinish(instance);
             };
 
-            _assetLoader = AssetLoader.Load<AssetLoader>(url, loadMode, callback);
+            _assetLoader = AssetLoader.Load<AssetLoader>(url, loadMode, callback, true);
         }
 
 

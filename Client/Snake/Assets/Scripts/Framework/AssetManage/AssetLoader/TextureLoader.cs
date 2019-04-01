@@ -5,16 +5,16 @@ using UnityEngine;
 namespace Framework
 {
     /// <summary>
-    /// Audio loader. 借助AssetLoader加载音效。
+    /// Texture loader. 借助AssetLoader加载贴图。
     /// </summary>
-    public class AudioLoader : BaseLoader
+    public class TextureLoader : BaseLoader
     {
         private AssetLoader _assetLoader;
 
 
-        public AudioClip audioClip
+        public Texture texture
         {
-            get { return ResultObject as AudioClip; }
+            get { return ResultObject as Texture; }
             protected set { ResultObject = value; }
         }
 
@@ -32,7 +32,15 @@ namespace Framework
 
             _assetLoader = AssetLoader.Load<AssetLoader>(Url, loadMode, (isOk, asset) => 
             { 
-                OnFinish(asset); 
+                OnFinish(asset);
+
+                if (isOk)
+                {
+                    Texture2D tex = asset as Texture2D;
+
+                    string format = tex != null ? tex.format.ToString() : "";
+                    Desc = string.Format("{0}*{1}-{2}-{3}", tex.width, tex.height, tex.width * tex.height, format);
+                }
             });
         }
 

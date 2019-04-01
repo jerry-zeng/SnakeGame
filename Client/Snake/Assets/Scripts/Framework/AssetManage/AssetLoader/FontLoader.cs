@@ -26,7 +26,7 @@ namespace Framework
             }
         }
 
-        protected override void Init(string url, LoadMode loadMode, params object[] args)
+        public override void Init(string url, LoadMode loadMode, params object[] args)
         {
             base.Init(url, loadMode, args);
 
