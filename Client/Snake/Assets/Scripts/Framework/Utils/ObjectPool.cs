@@ -4,18 +4,16 @@ namespace Framework
 {
     public class ObjectPool<T> where T : new()
     {
-        public delegate void PoolHandle(T t);
-
         protected Stack<T> _stack = new Stack<T>();
-        protected PoolHandle _onGet;
-        protected PoolHandle _onRelease;
+        protected Action<T> _onGet;
+        protected Action<T> _onRelease;
 
         public int Count
         { 
             get{ return _stack.Count; }
         }
 
-        public ObjectPool( PoolHandle onGet = null, PoolHandle onRelease = null )
+        public ObjectPool( Action<T> onGet = null, Action<T> onRelease = null )
         {
             this._onGet = onGet;
             this._onRelease = onRelease;

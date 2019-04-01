@@ -436,7 +436,7 @@ namespace Framework
                         byte[] downloadBytes = request.downloadHandler.data;
 
                         //compare md5
-                        if( matchMd5 != null && StringUtils.ToMD5( downloadBytes ) != matchMd5 )
+                        if( matchMd5 != null && StringUtils.BytesToMD5( downloadBytes ) != matchMd5 )
                         {
                             data = string.Format( "{{\"code\":5,\"message\":\"{0}\"}}", "md5 not match" );
                         }
@@ -529,7 +529,7 @@ namespace Framework
                 byte[] downloadBytes = request.downloadHandler.data;
 
                 // compare md5
-                if( matchMd5 != null && StringUtils.ToMD5( downloadBytes ) != matchMd5 )
+                if( matchMd5 != null && StringUtils.BytesToMD5( downloadBytes ) != matchMd5 )
                 {
                     data = string.Format( "{{\"code\":5,\"message\":\"{0}\"}}", "assetBundle md5 not match" );
                     dict.Add( "data", data );

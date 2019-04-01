@@ -6,7 +6,7 @@ namespace Framework
     {
         protected T _prefab;
 
-        public GameObjectPool( T prefab, PoolHandle onGet = null, PoolHandle onRelease = null )
+        public GameObjectPool( T prefab, Action<T> onGet = null, Action<T> onRelease = null )
             : base(onGet, onRelease)
         {
             this._prefab = prefab;

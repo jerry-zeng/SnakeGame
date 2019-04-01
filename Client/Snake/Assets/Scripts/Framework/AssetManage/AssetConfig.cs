@@ -12,7 +12,18 @@ namespace Framework
     /// </summary>
     public static class AssetConfig 
     {
+        private static readonly string ManifestFileName = "ArtResources";
 
+        //所有AssetBundle的依赖都在这个AssetBundle文件里面(Unity5.x)
+        public static string GetManifestFilePath()
+        {
+            return GetAssetFullPath(ManifestFileName);
+        }
+
+        public static string GetManifestFileName()
+        {
+            return GetPlatformName();// ManifestFileName;
+        }
 
         public static string GetPlatformName()
         {

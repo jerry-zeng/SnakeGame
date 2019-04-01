@@ -34,9 +34,7 @@ namespace Framework
 
             _hasPreloadAssetBundleManifest = true;
 
-            //TODO:
-            string mainAssetBundlePath = "ArtResources";
-            _mainAssetBundle = AssetBundle.LoadFromFile( mainAssetBundlePath );
+            _mainAssetBundle = AssetBundle.LoadFromFile( AssetConfig.GetManifestFilePath() );
             _assetBundleManifest = _mainAssetBundle.LoadAsset("AssetBundleManifest") as AssetBundleManifest;
         }
 
