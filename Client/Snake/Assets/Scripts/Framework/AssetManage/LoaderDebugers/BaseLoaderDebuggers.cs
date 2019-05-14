@@ -1,6 +1,4 @@
-﻿
-using System;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace Framework
 {
@@ -9,35 +7,32 @@ namespace Framework
     /// </summary>
     public class BaseLoaderDebugger : MonoBehaviour
     {
-        public BaseLoader Loader;
+        BaseLoader Loader;
         public int RefCount;
         public float FinishUsedTime; // 参考，完成所需时间
+
         public static bool IsApplicationQuit = false;
         const string bigType = "BaseLoaderDebuger";
 
-        public static BaseLoaderDebugger Create(string type, string url, BaseLoader loader)
+        public static BaseLoaderDebugger Create(string type, string uniqueKey, BaseLoader loader)
         {
             if (IsApplicationQuit) return null;
 
-            Func<string> getName = () => string.Format("{0}-{1}-{2}", type, url, loader.Desc);
+            //simplified uniqueKey
+            uniqueKey = uniqueKey.Replace(AssetConfig.GetWritablePath(), "").Replace(AssetConfig.GetStreamingAssetsPath(), "").Replace(AssetConfig.GameAssetsFolder, "");
 
-            var newHelpGameObject = new GameObject(getName());
-            DebuggerObjectTool.SetParent(bigType, type, newHelpGameObject);
+            // create a BaseLoaderDebugger
+            GameObject newHelpGameObject = new GameObject(uniqueKey);
             var newHelp = newHelpGameObject.AddComponent<BaseLoaderDebugger>();
             newHelp.Loader = loader;
 
-            loader.SetDescEvent += (newDesc) =>
-            {
-                if (loader.RefCount > 0)
-                    newHelpGameObject.name = getName();
-            };
-
-
             loader.DisposeEvent += () =>
             {
-                if (!IsApplicationQuit)
-                    DebuggerObjectTool.RemoveFromParent(bigType, type, newHelpGameObject);
+                DebuggerObjectTool.RemoveFromParent(bigType, type, newHelpGameObject);
             };
+
+            // add to hierarchy
+            DebuggerObjectTool.SetParent(bigType, type, newHelpGameObject);
 
             return newHelp;
         }

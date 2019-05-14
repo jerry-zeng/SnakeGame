@@ -1,4 +1,4 @@
-﻿//#define USE_ASSET_BUNDLE_EDITOR  // use asset bundle in editor.
+﻿//#define USE_ASSET_BUNDLE  // use asset bundle.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -10,28 +10,52 @@ namespace Framework
     /// <summary>
     /// Asset config. 配置一些资源规范，获取资源路径等方法.
     /// </summary>
-    public static class AssetConfig 
+    public static class AssetConfig
     {
         public static readonly string AssetBundleExtension = ".assetBundle";
 
-        private static readonly string ManifestFileName = "ArtResources";  //without extension
+        public static readonly string GameAssetsFolder = "GameAssets/";
+
+        public static readonly string ManifestFileName = "ArtResource";
+
+
+        /// <summary>
+        /// Gets the asset bundle full relative path.
+        /// 'relativePath' is like UI/Panel/MenuPanel, without an extension.
+        /// </summary>
+
+        public static string GetAssetBundleFullRelativePath(string relativePath)
+        {
+            return string.Format("{0}{1}{2}", GameAssetsFolder, relativePath.ToLower(), AssetBundleExtension);
+        }
+
+        /// <summary>
+        /// Gets the asset full path in an assetBundle.
+        /// 'relativePath' is like UI/Panel/MenuPanel.prefab, with an extension.
+        /// </summary>
+
+        public static string GetAssetFullPathInAB(string relativePath)
+        {
+            return string.Format("Assets/{0}{1}", GameAssetsFolder, relativePath);
+        }
+
 
         //所有AssetBundle的依赖都在这个AssetBundle文件里面(Unity5.x)
         public static string GetManifestFilePath()
         {
-            return GetAssetFullPath(ManifestFileName);
+            return GetGameAssetFullPath(GameAssetsFolder + ManifestFileName);
         }
 
         public static string GetManifestFileName()
         {
-            return GetPlatformName();// ManifestFileName;
+            return ManifestFileName;
         }
 
         public static string GetPlatformName()
         {
-            #if UNITY_EDITOR
-                return UnityEditor.EditorUserBuildSettings.activeBuildTarget.ToString();
-            #else
+#if UNITY_EDITOR
+            return UnityEditor.EditorUserBuildSettings.activeBuildTarget.ToString();
+#else
             if( Application.platform == RuntimePlatform.Android )
             {
                 return "Android";
@@ -44,7 +68,7 @@ namespace Framework
             {
                 return "StandAlone";
             }
-            #endif
+#endif
         }
 
         /// <summary>
@@ -72,7 +96,7 @@ namespace Framework
         /// <param name="relativePath">Relative path.</param>
         public static string GetUpdateDataPath(string relativePath)
         {
-            return Path.Combine( GetWritablePath(), relativePath );
+            return Path.Combine(GetWritablePath(), relativePath);
         }
 
         /// <summary>
@@ -84,58 +108,61 @@ namespace Framework
         {
             if (Application.platform == RuntimePlatform.Android)
             {
-                return Path.Combine( GetStreamingAssetsPath(), relativePath );
+                return Path.Combine(GetStreamingAssetsPath(), relativePath);
             }
             else if (Application.platform == RuntimePlatform.IPhonePlayer)
             {
-                return Path.Combine( GetStreamingAssetsPath(), relativePath );
+                return Path.Combine(GetStreamingAssetsPath(), relativePath);
             }
 
-            else if( Application.platform == RuntimePlatform.WindowsPlayer )  //win standalone, enable to place assets out of default path
+            else if (Application.platform == RuntimePlatform.WindowsPlayer)  //win standalone, enable to place assets out of default path
             {
-                return Path.Combine( GetStreamingAssetsPath(), relativePath );
+                return Path.Combine(GetStreamingAssetsPath(), relativePath);
             }
-            else if( Application.platform == RuntimePlatform.OSXPlayer )    //mac standalone, enable to place assets out of default path
+            else if (Application.platform == RuntimePlatform.OSXPlayer)    //mac standalone, enable to place assets out of default path
             {
-                return Path.Combine( GetStreamingAssetsPath(), relativePath );
+                return Path.Combine(GetStreamingAssetsPath(), relativePath);
             }
             else
             {
-                return Path.Combine( GetStreamingAssetsPath(), relativePath );
+                // default is in StreamingAssetsPath
+                return Path.Combine(GetStreamingAssetsPath(), relativePath);
             }
         }
 
 
         /// <summary>
-        /// Gets the local asset full path. The search order is: UpdateDataPath -> LocalDataPath (-> EditorLocalDataPath if in editor)
-        /// #If ( UNITY_EDITOR && !USE_ASSET_BUNDLE_EDITOR ), return a non-AssetBundle object path.
+        /// Gets the local game asset full path. The search order is: UpdateDataPath -> LocalDataPath (-> EditorLocalDataPath if in editor)
+        /// #If ( UNITY_EDITOR && !USE_ASSET_BUNDLE ), return a non-AssetBundle object path.
         /// </summary>
         /// <returns>The asset full path.</returns>
         /// <param name="relativePath">Relative path.</param>
-        public static string GetAssetFullPath( string relativePath)
+        public static string GetGameAssetFullPath(string relativePath)
         {
             string fullPath;
 
             fullPath = GetUpdateDataPath(relativePath);
-            if( File.Exists(fullPath) )
+            if (File.Exists(fullPath))
                 return fullPath;
 
+            // TODO: Android 平台的StreamingAssetsPath不能用File.Exists判断.
+
             fullPath = GetLocalDataPath(relativePath);
-            if( File.Exists(fullPath) )
+            if (File.Exists(fullPath))
                 return fullPath;
 
 #if UNITY_EDITOR
             fullPath = GetEditorLocalDataPath(relativePath);
-            if( File.Exists(fullPath) )
+            if (File.Exists(fullPath))
                 return fullPath;
 #endif
 
-            return "";
+            Debuger.LogError("AssetConfig", "Can't find the file {0}", relativePath);
+            return relativePath;
         }
 
 
-
-#if UNITY_EDITOR
+        #region Editor Methods
         /// <summary>
         /// Gets the editor local data path, only used in editor.
         /// </summary>
@@ -143,34 +170,34 @@ namespace Framework
         /// <param name="relativePath">Relative path.</param>
         public static string GetEditorLocalDataPath(string relativePath)
         {
-            #if USE_ASSET_BUNDLE_EDITOR
+#if USE_ASSET_BUNDLE
             return GetEditorAssetBundlePathRoot() + relativePath;
-            #else
+#else
             return GetEditorAssetPathRoot() + relativePath;
-            #endif
+#endif
         }
 
         /// <summary>
-        /// Gets the client asset bundle path root, ends with '/'.
+        /// Gets the client asset bundle path root, only used in editor., ends with '/'.
         /// We needn't place asset bundles under Application.dataPath or Application.streamingAssetsPath.
         /// Placing them out of Application.dataPath is more convienient to compile project.
         /// </summary>
         /// <returns>The client asset bundle path root.</returns>
         public static string GetEditorAssetBundlePathRoot()
         {
-            return Application.dataPath + "/../Exports/" + GetPlatformName() + "/";
+            return Application.dataPath + "/../AssetBundles/" + GetPlatformName() + "/";
         }
 
         /// <summary>
-        /// Gets the client assets path root, ends with '/'. 
+        /// Gets the client assets path root, only used in editor., ends with '/'. 
         /// It's neither Resources/ nor StreamingAssets/.
         /// </summary>
         /// <returns>The client data path root.</returns>
         public static string GetEditorAssetPathRoot()
         {
-            return Application.dataPath + "/GameAssets/";
+            return Path.Combine(Application.dataPath, GameAssetsFolder);
         }
-#endif
+        #endregion
 
     }
 }

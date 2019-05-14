@@ -9,6 +9,11 @@ namespace Framework
     /// </summary>
     public class InstanceAssetLoader : BaseLoader
     {
+        protected override string LOG_TAG
+        {
+            get { return "InstanceAssetLoader"; }
+        }
+
         private AssetLoader _assetLoader;
 
 
@@ -26,9 +31,9 @@ namespace Framework
             }
         }
 
-        public override void Init(string url, LoadMode loadMode, params object[] args)
+        public override void Init(string assetBundlePath, string assetPath, LoadMode loadMode, params object[] args)
         {
-            base.Init(url, loadMode, args);
+            base.Init(assetBundlePath, assetPath, loadMode, args);
 
             LoaderCallback callback = (isOk, asset) =>
             {
@@ -41,36 +46,38 @@ namespace Framework
                 if( !isOk )
                 {
                     OnFinish(null);
-                    Debuger.LogError(LOG_TAG, "[InstanceAssetLoader]Error on assetfilebridge loaded... {0}", url);
+                    Debuger.LogError(LOG_TAG, "Error on AssetLoader loaded... {0}|{1}", assetBundlePath, assetPath);
                     return;
                 }
 
-                Object instance = Object.Instantiate((Object)asset);
+                Object prefab = asset as Object;
+                Object instance = Object.Instantiate(prefab);
+                instance.name = prefab.name;
 
                 if (Application.isEditor)
                 {
-                    XXLoadedAssetDebugger.Create("AssetCopy", url, instance);
+                    LoadedAssetDebugger.Create("InstanceAsset", GetUniqueKey(), instance);
                 }
 
                 OnFinish(instance);
             };
 
-            _assetLoader = AssetLoader.Load<AssetLoader>(url, loadMode, callback, true);
+            _assetLoader = BaseLoader.Load<AssetLoader>(assetBundlePath, assetPath, loadMode, callback, true);
         }
 
 
         protected override void DoDispose()
         {
+            if (instanceAsset != null)
+            {
+                Object.Destroy(instanceAsset);
+                instanceAsset = null;
+            }
+
             base.DoDispose();
 
             _assetLoader.Release();
             _assetLoader = null;
-
-            if (ResultObject != null)
-            {
-                Object.Destroy((Object)ResultObject);
-                ResultObject = null;
-            }
         }
 
     }

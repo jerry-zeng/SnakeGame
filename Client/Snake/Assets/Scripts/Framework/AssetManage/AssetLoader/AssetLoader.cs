@@ -11,6 +11,11 @@ namespace Framework
     /// </summary>
     public class AssetLoader : BaseLoader
     {
+        protected override string LOG_TAG
+        {
+            get { return "AssetLoader"; }
+        }
+
         private AssetBundleLoader _bundleLoader;
 
 
@@ -24,7 +29,7 @@ namespace Framework
         {
             get
             {
-                return _bundleLoader != null? _bundleLoader.Progress : 0f;
+                return _bundleLoader != null ? _bundleLoader.Progress : 0f;
             }
         }
 
@@ -32,57 +37,66 @@ namespace Framework
         {
             get
             {
-                return Application.isEditor;
+#if UNITY_EDITOR
+    #if USE_ASSET_BUNDLE
+                return false;
+    #else
+                return true;
+    #endif
+#else
+                return false;
+#endif
             }
         }
+
         public bool IsLoadAssetBundle
         {
             get
             {
-                #if UNITY_EDITOR && !USE_ASSET_BUNDLE_EDITOR
-                return false;
-                #else
+#if USE_ASSET_BUNDLE
                 return true;
-                #endif
+#else
+                return false;
+#endif
             }
         }
 
 
-        public override void Init(string url, LoadMode loadMode, params object[] args)
+        public override void Init(string assetBundlePath, string assetPath, LoadMode loadMode, params object[] args)
         {
-            // TODO: 添加扩展名
-            //if (!IsEditorLoadAsset)
-            //    url = url + AppEngine.GetConfig(KEngineDefaultConfigs.AssetBundleExt);
+            base.Init(assetBundlePath, assetPath, loadMode, args);
 
-            base.Init(url, loadMode, args);
-
-            //TODO
-            //AssetManager.Instance.StartCoroutine( Start() );
+            // 这个MonoBehaviour类需要自己提供.
+            AssetManager.instance.StartCoroutine(Start());
         }
 
         IEnumerator Start()
         {
-            string path = Url;
             Object getAsset = null;
 
+#if UNITY_EDITOR
             if (IsEditorLoadAsset) 
             {
-                #if UNITY_EDITOR
-                getAsset = UnityEditor.AssetDatabase.LoadAssetAtPath( AssetConfig.GetEditorAssetPathRoot() + "/" + path, typeof(UnityEngine.Object));
+
+                getAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<Object>( AssetConfig.GetEditorAssetPathRoot() + AssetPath);
                 if (getAsset == null)
                 {
-                    Debuger.LogError("Asset is NULL(from {0} Folder): {1}", AssetConfig.GetEditorAssetPathRoot(), path);
+                    Debuger.LogError("Asset is NULL(from {0} Folder): {1}", AssetConfig.GetEditorAssetPathRoot(), AssetPath);
                 }
-                #else
-                Debuger.LogError("`IsEditorLoadAsset` is used in Unity Editor only");
-                #endif
+
 
                 OnFinish(getAsset);
             }
-            else if (!IsLoadAssetBundle)
+            else
+#endif
+            if (!IsLoadAssetBundle)
             {
-                string extension = Path.GetExtension(path);
-                path = path.Substring(0, path.Length - extension.Length); // remove extensions
+                string extension = Path.GetExtension(AssetPath);
+                string path = AssetPath.Substring(0, AssetPath.Length - extension.Length); // remove extensions
+
+                // 去掉 "GameAssets/"
+                if (path.StartsWith(AssetConfig.GameAssetsFolder))
+                    path = path.Replace(AssetConfig.GameAssetsFolder, "");
 
                 getAsset = Resources.Load<Object>(path);
                 if (getAsset == null)
@@ -93,7 +107,7 @@ namespace Framework
             }
             else
             {
-                _bundleLoader = AssetBundleLoader.Load<AssetBundleLoader>(path, loadMode, null);
+                _bundleLoader = BaseLoader.Load<AssetBundleLoader>(AssetBundlePath, "", loadMode, null);
 
                 while (!_bundleLoader.IsCompleted)
                 {
@@ -108,7 +122,7 @@ namespace Framework
 
                 if (!_bundleLoader.IsSuccess)
                 {
-                    Debuger.LogError("[AssetFileLoader]Load BundleLoader Failed(Error) when Finished: {0}", path);
+                    Debuger.LogError(LOG_TAG, "Load bundle Failed(Error) when Finished: {0}", AssetBundlePath);
                     _bundleLoader.Release();
                     OnFinish(null);
                     yield break;
@@ -116,13 +130,15 @@ namespace Framework
 
                 var assetBundle = _bundleLoader.assetBundle;
 
-                var assetName = Path.GetFileNameWithoutExtension(Url).ToLower();
+                var assetName = AssetPath;
                 if (!assetBundle.isStreamedSceneAssetBundle)
                 {
                     if (loadMode == LoadMode.Sync)
                     {
                         getAsset = assetBundle.LoadAsset(assetName);
-                        _bundleLoader.PushLoadedAsset(assetName, getAsset);
+
+                        if(getAsset != null)
+                            _bundleLoader.PushLoadedAsset(assetName, getAsset);
                     }
                     else
                     {
@@ -133,83 +149,50 @@ namespace Framework
                         }
 
                         getAsset = request.asset;
-                        _bundleLoader.PushLoadedAsset(assetName, getAsset);
+
+                        if (getAsset != null)
+                            _bundleLoader.PushLoadedAsset(assetName, getAsset);
                     }
                 }
                 else
                 {
-                    // if it's a scene in asset bundle, did nothing
-                    // but set a fault Object the result
+                    // if it's a scene in asset bundle, do nothing
+                    // but set a default Object as the result
 
                     //TODO:
+                    Debuger.LogWarning(LOG_TAG, "Can't load any assets from A scene asset bundle");
                     getAsset = null;
                 }
 
                 if (getAsset == null)
                 {
-                    Debuger.LogError("Asset is NULL: {0}", path);
+                    Debuger.LogError(LOG_TAG, "Asset is NULL(From asset bundle): {0}", AssetPath);
                 }
             }
 
             if (Application.isEditor)
             {
                 if (getAsset != null)
-                    XXLoadedAssetDebugger.Create(getAsset.GetType().Name, Url, getAsset as Object);
-
-                // 编辑器环境下，如果遇到GameObject，对Shader进行Fix
-                if (getAsset is GameObject)
                 {
-                    var go = getAsset as GameObject;
-                    foreach (var r in go.GetComponentsInChildren<Renderer>(true))
-                    {
-                        RefreshMaterialsShaders(r);
-                    }
+                    LoadedAssetDebugger.Create(getAsset.GetType().Name, GetUniqueKey(), getAsset);
                 }
-            }
-
-            if (getAsset != null)
-            {
-                // 更名~ 注明来源asset bundle 带有类型
-                getAsset.name = string.Format("{0}~{1}", getAsset, Url);
             }
 
             OnFinish(getAsset);
         }
 
-        /// <summary>
-        /// 编辑器模式下，对指定GameObject刷新一下Material
-        /// </summary>
-        public static void RefreshMaterialsShaders(Renderer renderer)
-        {
-            if (renderer.sharedMaterials != null)
-            {
-                foreach (var mat in renderer.sharedMaterials)
-                {
-                    if (mat != null && mat.shader != null)
-                    {
-                        mat.shader = Shader.Find(mat.shader.name);
-                    }
-                }
-            }
-        }
-
         protected override void DoDispose()
         {
-            base.DoDispose();
-
-            _bundleLoader.Release(); // 释放Bundle(WebStream)
-            _bundleLoader = null;
-
             //TODO: 这里有坑.
             //if (IsFinished)
             {
                 if (!IsLoadAssetBundle)
                 {
-                    Resources.UnloadAsset(ResultObject as Object);
+                    Resources.UnloadAsset(asset);
                 }
                 else
                 {
-                    //Object.DestroyObject(ResultObject as UnityEngine.Object);
+                    //Object.DestroyObject(asset);
                 }
             }
             //else
@@ -217,6 +200,14 @@ namespace Framework
             //    // 交给加载后，进行检查并卸载资源
             //    // 可能情况TIPS：两个未完成的！会触发上面两次！
             //}
+
+            base.DoDispose();
+
+            if(_bundleLoader != null)
+            {
+                _bundleLoader.Release(); // 释放Bundle
+            }
+            _bundleLoader = null;
         }
     }
 

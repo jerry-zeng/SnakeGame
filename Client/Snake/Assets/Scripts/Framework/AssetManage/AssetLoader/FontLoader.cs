@@ -9,6 +9,11 @@ namespace Framework
     /// </summary>
     public class FontLoader : BaseLoader
     {
+        protected override string LOG_TAG
+        {
+            get { return "FontLoader"; }
+        }
+
         private AssetLoader _assetLoader;
 
 
@@ -26,11 +31,11 @@ namespace Framework
             }
         }
 
-        public override void Init(string url, LoadMode loadMode, params object[] args)
+        public override void Init(string assetBundlePath, string assetPath, LoadMode loadMode, params object[] args)
         {
-            base.Init(url, loadMode, args);
+            base.Init(assetBundlePath, assetPath, loadMode, args);
 
-            _assetLoader = AssetLoader.Load<AssetLoader>(Url, loadMode, (isOk, asset) => 
+            _assetLoader = AssetLoader.Load<AssetLoader>(assetBundlePath, assetPath, loadMode, (isOk, asset) => 
             { 
                 OnFinish(asset); 
             });

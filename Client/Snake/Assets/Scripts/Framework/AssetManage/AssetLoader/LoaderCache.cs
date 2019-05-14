@@ -95,48 +95,48 @@ namespace Framework
             if( loader == null ) return false;
 
             var typeDict = GetTypeDict( loader.GetType() );
-            return typeDict.Remove(loader.Url);
+            return typeDict.Remove( loader.GetUniqueKey() );  //NOTE: add to remove loader都用 loader._uniqueKey作为key
         }
 
         /// <summary>
         /// 统一的对象工厂
         /// </summary>
 
-        public static T AutoNew<T>(string url, LoadMode loadMode, LoaderCallback callback, bool forceCreateNew = false,
+        public static T AutoNew<T>(string assetBundlePath, string assetPath, LoadMode loadMode, LoaderCallback callback, bool forceCreateNew = false,
                                    params object[] initArgs) where T : BaseLoader, new()
         {
-            if (string.IsNullOrEmpty(url))
-            {
-                Debuger.LogError(LOG_TAG, "[{0}:AutoNew] url为空", typeof(T));
-            }
+            // 唯一key.
+            string uniqueKey = BaseLoader.GenerateKey(assetBundlePath, assetPath);
 
             Dictionary<string, BaseLoader> typesDict = GetTypeDict(typeof(T));
-            BaseLoader loader;
 
-            if ( forceCreateNew || !typesDict.TryGetValue(url, out loader) )
+            BaseLoader loader;
+            if ( forceCreateNew || !typesDict.TryGetValue(uniqueKey, out loader) )
             {
                 loader = new T();
 
                 if (!forceCreateNew)
-                    typesDict[url] = loader;
+                    typesDict[uniqueKey] = loader;  //NOTE: add to remove loader都用 loader._uniqueKey作为key
 
                 loader.IsForceNew = forceCreateNew;
-                loader.Init(url, loadMode, initArgs);
+                loader.Init(assetBundlePath, assetPath, loadMode, initArgs);
 
+                // 创建新的BaseLoader
                 if (Application.isEditor)
                 {
-                    BaseLoaderDebugger.Create(typeof(T).Name, url, loader);
+                    BaseLoaderDebugger.Create(typeof(T).Name, uniqueKey, loader);
                 }
             }
             else
             {
                 if (loader.RefCount < 0)
                 {
-                    //loader.IsDisposed = false;  // 转死回生的可能
+                    // 转死回生的可能
                     Debuger.LogError(LOG_TAG, "Error RefCount!");
                 }
             }
 
+            // 引用计数+1
             loader.AddRef();
 
             // RefCount++了，重新激活，在队列中准备清理的Loader

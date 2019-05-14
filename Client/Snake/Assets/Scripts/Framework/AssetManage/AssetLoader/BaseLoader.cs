@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using Object = UnityEngine.Object;
 
 namespace Framework
 {
@@ -17,6 +18,7 @@ namespace Framework
     /// 'resultObject': the loaded result object, most time is UnityEngine.Object
     /// </summary>
     public delegate void LoaderCallback(bool isOk, object resultObject);
+    public delegate void LoadAssetCallback(Object resultObject);
 
 
     /// <summary>
@@ -24,7 +26,10 @@ namespace Framework
     /// </summary>
     public abstract class BaseLoader
     {
-        protected const string LOG_TAG = "BaseLoader";
+        protected abstract string LOG_TAG
+        {
+            get;
+        }
 
         public enum ErrorType : uint
         {
@@ -35,8 +40,8 @@ namespace Framework
             GC,
         }
 
-
-        public string Url { get; protected set; }
+        public string AssetBundlePath { get; protected set; }
+        public string AssetPath { get; protected set; }
 
         public LoadMode loadMode { get; protected set; }
 
@@ -103,37 +108,26 @@ namespace Framework
         }
 
         #region Debug
-        public Action<string> SetDescEvent;
-
-        private string _desc = "";
-
-        /// <summary>
-        /// Gets or sets the desc. Used for debugger.
-        /// </summary>
-        /// <value>The desc.</value>
-        public virtual string Desc
-        {
-            get { return _desc; }
-            set
-            {
-                _desc = value;
-                if (SetDescEvent != null)
-                    SetDescEvent(_desc);
-            }
-        }
-
         public Action DisposeEvent;
+
         #endregion
 
         protected readonly List<LoaderCallback> _callbacks = new List<LoaderCallback>();
         protected float _initTime = -1f;
         protected float _finishTime = -1f;
 
+        protected string _uniqueKey = null;
 
-        public static T Load<T>(string url, LoadMode loadMode = LoadMode.Async, LoaderCallback callback = null, 
+        /// <summary>
+        /// Load the specified assetBundlePath, assetPath, loadMode, callback, forceCreateNew and initArgs.
+        /// 加载 assetBundle 时: assetPath 为null或者""
+        /// 加载 assetBundle中的asset 时: assetBundlePath和assetPath都要填
+        /// 加载 非assetBundle中的asset 时: assetBundlePath 为null或者""
+        /// </summary>
+        public static T Load<T>(string assetBundlePath, string assetPath, LoadMode loadMode = LoadMode.Async, LoaderCallback callback = null, 
                                 bool forceCreateNew = false, params object[] initArgs) where T : BaseLoader, new()
         {
-            return LoaderCache.AutoNew<T>(url, loadMode, callback, forceCreateNew, initArgs);
+            return LoaderCache.AutoNew<T>(assetBundlePath, assetPath, loadMode, callback, forceCreateNew, initArgs);
         }
 
         public BaseLoader()
@@ -141,17 +135,63 @@ namespace Framework
             RefCount = 0;
         }
 
-        public virtual void Init(string url, LoadMode loadMode, params object[] args)
+        public virtual void Init(string assetBundlePath, string assetPath, LoadMode loadMode, params object[] args)
         {
-            Url = url;
+            this.AssetBundlePath = assetBundlePath ?? "";
+            this.AssetPath = assetPath ?? "";
             this.loadMode = loadMode;
             Progress = 0f;
             _initTime = Time.realtimeSinceStartup;
+            _uniqueKey = null;
 
             ResultObject = null;
             Error = ErrorType.None;
             IsCompleted = false;
             IsReadyDisposed = false;
+
+            if(string.IsNullOrEmpty(this.AssetBundlePath) && string.IsNullOrEmpty(this.AssetPath))
+            {
+            }
+            else
+            {
+                _uniqueKey = GenerateKey(this.AssetBundlePath, this.AssetPath);
+            }
+            Debuger.Log(LOG_TAG, "_uniqueKey={0}", _uniqueKey);
+        }
+        protected virtual void Reset()
+        {
+            this.AssetBundlePath = "";
+            this.AssetPath = "";
+            Progress = 0f;
+            _uniqueKey = null;
+
+            ResultObject = null;
+            Error = ErrorType.None;
+            IsCompleted = false;
+            IsReadyDisposed = false;
+        }
+
+        /// <summary>
+        /// Gets the unique key. Combined with assetBundlePath and assetPath
+        /// </summary>
+        public string GetUniqueKey()
+        {
+            return _uniqueKey;
+        }
+
+        /// <summary>
+        /// Generates the key. Combined with assetBundlePath and assetPath
+        /// </summary>
+        public static string GenerateKey(string assetBundlePath, string assetPath)
+        {
+            if (string.IsNullOrEmpty(assetPath) && string.IsNullOrEmpty(assetBundlePath))
+                return null;
+            else if (string.IsNullOrEmpty(assetPath))
+                return assetBundlePath;
+            else if (string.IsNullOrEmpty(assetBundlePath))
+                return assetPath;
+            else
+                return string.Format("{0}|{1}", assetBundlePath, assetPath);;
         }
 
         public virtual void AddRef()
@@ -183,7 +223,7 @@ namespace Framework
 
                 DoCallback(IsSuccess, null);
 
-                this.Log("[BaseLoader:OnFinish]时，准备Disposed {0}", Url);
+                this.Log("[BaseLoader:OnFinish]时，准备Disposed {0}", AssetPath);
 
                 DoDispose();
             }
@@ -215,6 +255,7 @@ namespace Framework
 
             if (IsCompleted)
             {
+                // TODO: 这里如果原先是Async加载方式，这样调用就会变成Sync，会有问题.
                 callback(IsSuccess, ResultObject);
             }
             else
@@ -236,7 +277,7 @@ namespace Framework
         {
             if (IsReadyDisposed && Debug.isDebugBuild)
             {
-                this.LogWarning("[{0}]Too many dipose! {1}, Count: {2}", GetType().Name, this.Url, RefCount);
+                this.LogWarning("[{0}]Too many dipose! {1}, Count: {2}", GetType().Name, this.AssetPath, RefCount);
             }
 
             RefCount--;
@@ -272,7 +313,7 @@ namespace Framework
                 bool bRemove = LoaderCache.RemoveLoader(this);
                 if (!bRemove)
                 {
-                    Debuger.LogWarning("[{0}:Dispose], No Url: {1}, Cur RefCount: {2}", GetType().Name, Url, RefCount);
+                    Debuger.LogWarning("[{0}:Dispose], No Url: {1}, Cur RefCount: {2}", GetType().Name, AssetPath, RefCount);
                 }
             }
 
@@ -287,9 +328,9 @@ namespace Framework
         protected virtual void DoDispose()
         {
             RefCount = 0;
-            Init(null, loadMode);
 
-            SetDescEvent = null;
+            //NOTE: 单纯把 ResultObject = null 不一定能释放加载出来的资源，或者释放不及时，比如AssetBundle，具体情况具体分析.
+            Reset();
         }
 
         /// <summary>

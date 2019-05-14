@@ -22,9 +22,7 @@ namespace Framework
         /// <summary>
         /// 设置某个物件，在指定调试组下
         /// </summary>
-        /// <param name="bigType"></param>
-        /// <param name="smallType"></param>
-        /// <param name="obj"></param>
+
         public static void SetParent(string bigType, string smallType, GameObject obj)
         {
             var uri = GetUri(bigType, smallType);
@@ -44,24 +42,22 @@ namespace Framework
 
         public static void RemoveFromParent(string bigType, string smallType, GameObject obj)
         {
-            if (!BaseLoaderDebugger.IsApplicationQuit)
-            {
-                if (obj != null)
-                    GameObject.Destroy(obj);
+            if (BaseLoaderDebugger.IsApplicationQuit) 
+                return;
 
-                var newCount = --Counts[GetUri(bigType, smallType)];
+            if (obj != null)
+                GameObject.Destroy(obj);
 
-                var parent = GetParent(bigType, smallType);
-                parent.name = GetNameWithCount(smallType, newCount);
-            }
+            var newCount = --Counts[GetUri(bigType, smallType)];
+
+            var parent = GetParent(bigType, smallType);
+            parent.name = GetNameWithCount(smallType, newCount);
         }
 
         /// <summary>
         /// 设置Parent名字,带有数量
         /// </summary>
-        /// <param name="obj"></param>
-        /// <param name="smallType"></param>
-        /// <param name="count"></param>
+
         protected static string GetNameWithCount(string smallType, int count)
         {
             return string.Format("{0}({1})", smallType, count);

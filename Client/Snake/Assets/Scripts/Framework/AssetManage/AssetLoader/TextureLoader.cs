@@ -9,6 +9,11 @@ namespace Framework
     /// </summary>
     public class TextureLoader : BaseLoader
     {
+        protected override string LOG_TAG
+        {
+            get { return "TextureLoader"; }
+        }
+
         private AssetLoader _assetLoader;
 
 
@@ -26,21 +31,13 @@ namespace Framework
             }
         }
 
-        public override void Init(string url, LoadMode loadMode, params object[] args)
+        public override void Init(string assetBundlePath, string assetPath, LoadMode loadMode, params object[] args)
         {
-            base.Init(url, loadMode, args);
+            base.Init(assetBundlePath, assetPath, loadMode, args);
 
-            _assetLoader = AssetLoader.Load<AssetLoader>(Url, loadMode, (isOk, asset) => 
+            _assetLoader = BaseLoader.Load<AssetLoader>(assetBundlePath, assetPath, loadMode, (isOk, asset) => 
             { 
                 OnFinish(asset);
-
-                if (isOk)
-                {
-                    Texture2D tex = asset as Texture2D;
-
-                    string format = tex != null ? tex.format.ToString() : "";
-                    Desc = string.Format("{0}*{1}-{2}-{3}", tex.width, tex.height, tex.width * tex.height, format);
-                }
             });
         }
 
