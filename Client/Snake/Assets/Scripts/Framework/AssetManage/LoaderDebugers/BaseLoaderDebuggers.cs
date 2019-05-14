@@ -7,9 +7,9 @@ namespace Framework
     /// </summary>
     public class BaseLoaderDebugger : MonoBehaviour
     {
-        BaseLoader Loader;
-        public int RefCount;
-        public float FinishUsedTime; // 参考，完成所需时间
+        BaseLoader loader;
+        public int refCount;
+        public float finishUsedTime; // 参考，完成所需时间
 
         public static bool IsApplicationQuit = false;
         const string bigType = "BaseLoaderDebuger";
@@ -24,7 +24,7 @@ namespace Framework
             // create a BaseLoaderDebugger
             GameObject newHelpGameObject = new GameObject(uniqueKey);
             var newHelp = newHelpGameObject.AddComponent<BaseLoaderDebugger>();
-            newHelp.Loader = loader;
+            newHelp.loader = loader;
 
             loader.DisposeEvent += () =>
             {
@@ -39,8 +39,8 @@ namespace Framework
 
         private void Update()
         {
-            RefCount = Loader.RefCount;
-            FinishUsedTime = Loader.CostTime;
+            refCount = loader.RefCount;
+            finishUsedTime = loader.CostTime;
         }
 
         private void OnApplicationQuit()

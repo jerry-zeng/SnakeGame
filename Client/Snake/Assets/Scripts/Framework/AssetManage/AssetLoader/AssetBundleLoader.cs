@@ -27,33 +27,49 @@ namespace Framework
 
         #region Manifest
         private static bool _hasPreloadAssetBundleManifest = false;
-        private static AssetBundle _mainAssetBundle;
-        private static AssetBundleManifest _assetBundleManifest;
+        private static Dictionary<string, string[]> _dependences = null;
 
-        public static void PreLoadManifest()
+        public static void PreloadDependencies()
         {
             if (_hasPreloadAssetBundleManifest)
                 return;
 
             _hasPreloadAssetBundleManifest = true;
 
-            _mainAssetBundle = AssetBundle.LoadFromFile( AssetConfig.GetManifestFilePath() );  //好处是不管ab放在哪里，都可以统一用一个接口.
-            _assetBundleManifest = _mainAssetBundle.LoadAsset("AssetBundleManifest") as AssetBundleManifest;
+            AssetBundle mainAssetBundle = AssetBundle.LoadFromFile( AssetConfig.GetManifestFilePath() );  //好处是不管ab放在哪里，都可以统一用一个接口.
+            AssetBundleManifest assetBundleManifest = mainAssetBundle.LoadAsset("AssetBundleManifest") as AssetBundleManifest;
+
+            _dependences = new Dictionary<string, string[]>();
+            foreach(string ab in assetBundleManifest.GetAllAssetBundles())
+            {
+                _dependences.Add(ab, assetBundleManifest.GetAllDependencies(ab));
+            }
+//            Debuger.Log("AssetBundleLoader", "assetBundle count = {0}", _dependences.Count);
+
+            assetBundleManifest = null;
+            mainAssetBundle.Unload(true);
+            mainAssetBundle = null;
         }
 
-        public static void ClearManifest()
+        public static void ClearDependences()
         {
-            _assetBundleManifest = null;
-            _mainAssetBundle.Unload(true);
-            _mainAssetBundle = null;
+            _dependences.Clear();
+            _dependences = null;
             _hasPreloadAssetBundleManifest = false;
+        }
+
+        public static string[] GetAllDependencies(string assetBundleName)
+        {
+            string[] dep;
+            _dependences.TryGetValue(assetBundleName, out dep);
+            return dep;
         }
         #endregion
 
 
         public override void Init(string assetBundlePath, string assetPath, LoadMode loadMode, params object[] args)
         {
-            PreLoadManifest();
+            PreloadDependencies();
 
             base.Init(assetBundlePath, assetPath, loadMode, args);
 
@@ -66,19 +82,22 @@ namespace Framework
             string abPath = AssetBundlePath;
 
             //load dependence
-            var deps = _assetBundleManifest.GetAllDependencies(abPath);
+            var deps = GetAllDependencies(abPath);
 
-            _depLoaders = new AssetBundleLoader[deps.Length];
-            for (int i = 0; i < deps.Length; i++)
+            if( deps.Length > 0 )
             {
-                _depLoaders[i] = BaseLoader.Load<AssetBundleLoader>(deps[i], "", loadMode, null);
-            }
-
-            for (var l = 0; l < _depLoaders.Length; l++)
-            {
-                while (!_depLoaders[l].IsCompleted)
+                _depLoaders = new AssetBundleLoader[deps.Length];
+                for( int i = 0; i < deps.Length; i++ )
                 {
-                    yield return null;
+                    _depLoaders[i] = BaseLoader.Load<AssetBundleLoader>(deps[i], "", loadMode, null);
+                }
+
+                for( var l = 0; l < _depLoaders.Length; l++ )
+                {
+                    while( !_depLoaders[l].IsCompleted )
+                    {
+                        yield return null;
+                    }
                 }
             }
 
