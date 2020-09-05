@@ -36,7 +36,8 @@ namespace Framework
             {
                 Created = 0,
                 Running,
-                Completed
+                Completed,
+                Canceled,
             }
 
             /// <summary>
@@ -48,33 +49,25 @@ namespace Framework
             public Task ioTask;//  下载时有io任务
             public UnityWebRequest request;
 
-
-            private bool _isClosed = false;
-            public bool IsClosed 
+            public bool IsCompleted
             {
-                get { return _isClosed; } 
-                set { _isClosed = value; }
+                get{ return status == EStatus.Completed; }
             }
 
             public float Progress
             {
                 get
                 {
-                    if( _isClosed )
+                    if( IsCompleted || status == EStatus.Canceled )
                         return 1f;
 
                     if( request.isNetworkError || request.isHttpError )
                         return 0f;
 
-                    float n = request.downloadProgress;
-                    if( n < 0f )
-                        return 0f;
-
-                    return n;
+                    return request.downloadProgress;
                 }
             }
         }
-
 
         public const int IO_RESULT_SUCCESS = 0;
         public const int IO_RESULT_FAIL = -1;
@@ -147,7 +140,7 @@ namespace Framework
                 for( int i = _httpRequestList.Count - 1; i >= 0; i-- )
                 {
                     var requestTask = _httpRequestList[i];
-                    if( requestTask.status == RequestTask.EStatus.Completed )
+                    if( requestTask.status == RequestTask.EStatus.Completed || requestTask.status == RequestTask.EStatus.Canceled )
                     {
                         _httpRequestList[i] = _httpRequestList[_httpRequestList.Count-1];
                         _httpRequestList.RemoveAt( _httpRequestList.Count-1 );
@@ -182,23 +175,21 @@ namespace Framework
             base.OnDestroy();
         }
 
-        public void DisposeWebRequesat( UnityWebRequest request )
+        private void DisposeWebRequesat( UnityWebRequest request )
         {
-            if( request == null ) return;
-
-            //可能request是Get, Post之后传过来的，不是Download，此时s_disposeWebRequestCast还没有。
-            if( _disposeWebRequestCaster != null )  
-                _disposeWebRequestCaster.Invoke( request );
-
-            request.Dispose();
+            if( request != null )
+                request.Dispose();
         }
 
-        public void CancelRequestTask( RequestTask task )
+        public bool CancelRequestTask( RequestTask task )
         {
-            if( task == null || task.IsClosed ) return;
+            if( task == null || task.status == RequestTask.EStatus.Completed ) 
+                return false;
 
             task.request.Abort();
-            task.IsClosed = true;
+            task.status = RequestTask.EStatus.Canceled;
+
+            return true;
         }
 
         public void ClearAllTask()
@@ -211,14 +202,13 @@ namespace Framework
                         requestTask.request.Abort();
                     else{
                         DisposeWebRequesat(requestTask.request);
-                        requestTask.IsClosed = true;
                     }
                 }
                 else
                 {
                     DisposeWebRequesat( requestTask.request );
-                    requestTask.IsClosed = true;
                 }
+                requestTask.status = RequestTask.EStatus.Canceled;
             }
             _httpRequestList.Clear();
 
@@ -245,28 +235,28 @@ namespace Framework
             return formFields;
         }
 
-        public void Get( string url, bool needUnZip, int timeout, HttpCallback callback )
+        public RequestTask Get( string url, bool needUnZip, int timeout, HttpCallback callback )
         {
             UnityWebRequest request = UnityWebRequest.Get( url );
             if( timeout > 0 )
             {
                 request.timeout = timeout;
             }
-            AddRequestTask( request, url, "", needUnZip, callback );
+            return AddRequestTask( request, url, "", needUnZip, callback );
         }
 
-        public void Post( string url, Dictionary<string, string> formFields, bool needUnZip, int timeout, HttpCallback callback )
+        public RequestTask Post( string url, Dictionary<string, string> formFields, bool needUnZip, int timeout, HttpCallback callback )
         {
             UnityWebRequest request = UnityWebRequest.Post( url, formFields );
             if( timeout > 0 )
             {
                 request.timeout = timeout;
             }
-            AddRequestTask( request, url, "", needUnZip, callback );
+            return AddRequestTask( request, url, "", needUnZip, callback );
         }
-        public void Post( string url, string data, bool needUnZip, int timeout, HttpCallback callback )
+        public RequestTask Post( string url, string data, bool needUnZip, int timeout, HttpCallback callback )
         {
-            Post( url, GetPostData(data), needUnZip, timeout, callback );
+            return Post( url, GetPostData(data), needUnZip, timeout, callback );
         }
 
         public void UploadFile( string url, string fullFilePath, bool needUnZip, int timeout, HttpCallback callback )
@@ -377,7 +367,7 @@ namespace Framework
         }
 
 
-        private void SaveFile( string fullPath, byte[] data )
+        void SaveFile( string fullPath, byte[] data )
         {
             if( data == null )
                 return;
@@ -618,7 +608,7 @@ namespace Framework
             return null;
         }
 
-        RequestTask AddRequestTask( UnityWebRequest request, string url, string fullFilePath, bool needUnZip, HttpCallback callback, bool first = false, bool isAssetBundle = false, string matchMd5 = null )
+        RequestTask AddRequestTask( UnityWebRequest request, string url, string saveFileFullPath, bool needUnZip, HttpCallback callback, bool first = false, bool isAssetBundle = false, string matchMd5 = null )
         {
             RequestTask requestTask = new RequestTask();
             requestTask.request = request;
@@ -635,15 +625,12 @@ namespace Framework
                     {
                         if( isAssetBundle )
                         {
-                            OnRequestAssetBundleComplete(self.request, startTime, fullFilePath, callback, matchMd5);
-                            self.IsClosed = true;
+                            OnRequestAssetBundleComplete(self.request, startTime, saveFileFullPath, callback, matchMd5);
                             self.status = RequestTask.EStatus.Completed;
                         }
                         else
                         {
-                            Task task = OnRequestComplete(self.request, startTime, needUnZip, fullFilePath, callback, matchMd5);
-                            self.IsClosed = true;
-
+                            Task task = OnRequestComplete(self.request, startTime, needUnZip, saveFileFullPath, callback, matchMd5);
                             if( task == null )
                             {
                                 self.status = RequestTask.EStatus.Completed;

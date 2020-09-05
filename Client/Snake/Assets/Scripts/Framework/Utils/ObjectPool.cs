@@ -35,7 +35,7 @@ namespace Framework
 
         public virtual void Release(T value)
         {
-            if( System.Object.ReferenceEquals(_stack.Peek(), value) )
+            if( _stack.Count > 0 && System.Object.ReferenceEquals(_stack.Peek(), value) )
                 return;
 
             if( _onRelease != null )
