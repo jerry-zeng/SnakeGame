@@ -22,6 +22,14 @@ public class UIRankingListPanel : UIBasePanel
         btn_Back.onClick.AddListener(OnClickBack);
     }
 
+    public override void Release()
+    {
+        btn_Back.onClick.RemoveAllListeners();
+
+        base.Release();
+    }
+
+
     void OnClickBack()
     {
         UIManager.Instance.PopUI();

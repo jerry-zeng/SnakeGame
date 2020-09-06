@@ -11,31 +11,14 @@ public class LobbyModule : BusinessModule
     {
         base.Open(arg);
 
+        UIManager.Instance.ReleaseAllUIOfCurrentUnityScene();
 
+        UIManager.Instance.ShowUI( UIDef.UILobbyPanel );
     }
+
 
     public void OpenModule(string moduleName, object arg = null)
     {
-        switch(moduleName)
-        {
-        case ModuleDef.SettingModule:
-            UIManager.Instance.ShowUI( UIDef.UISettingPanel );
-            UIManager.Instance.SetFullScreenMaskClickListener( ()=>
-            {
-                UIManager.Instance.HideUI( UIDef.UISettingPanel );
-            } );
-        break;
-
-        case ModuleDef.QuestModule:
-        case ModuleDef.RankingModule:
-        case ModuleDef.MailModule:
-        case ModuleDef.PVPModule:
-        case ModuleDef.PVEModule:
-            ModuleManager.Instance.OpenModule(moduleName, arg);
-        break;
-
-        default:
-        break;
-        }
+        ModuleManager.Instance.OpenModule(moduleName, arg);
     }
 }

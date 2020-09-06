@@ -6,6 +6,8 @@
 /// </summary>
 public sealed partial class ModuleDef 
 {
+    public const string SplashModule = "SplashModule";
+    public const string UpdateModule = "UpdateModule";
     public const string LoginModule = "LoginModule";
     public const string LobbyModule = "LobbyModule";
 

@@ -7,13 +7,26 @@ using EpochProtocol;
 
 public class LoginModule : BusinessModule 
 {
-
     public override void Open(object arg)
     {
         base.Open(arg);
 
+        UIManager.Instance.ReleaseAllUIOfCurrentUnityScene();
 
+        UIManager.Instance.ShowUI( UIDef.UILoginPanel );
+        EventManager.Instance.RegisterEvent(EventDef.OnLogin, OnLogin);
     }
+
+    public override void Close()
+    {
+        EventManager.Instance.UnregisterEvent(EventDef.OnLogin, OnLogin);
+    }
+
+    void OnLogin()
+    {
+        ModuleManager.Instance.OpenModule(ModuleDef.LobbyModule);
+    }
+
 
     public void Login(uint id, string userName, string password)
     {

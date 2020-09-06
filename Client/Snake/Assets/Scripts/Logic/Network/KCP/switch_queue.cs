@@ -1,7 +1,7 @@
 //using System;
 using System.Collections.Generic;
 
-namespace Framework.Network
+namespace Framework.Network.Kcp
 {
     public class SwitchQueue<T> where T : class
     {

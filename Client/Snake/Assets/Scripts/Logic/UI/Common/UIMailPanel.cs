@@ -21,6 +21,14 @@ public class UIMailPanel : UIBasePanel
         btn_Close.onClick.AddListener(OnClickClose);
     }
 
+    public override void Release()
+    {
+        btn_Close.onClick.RemoveAllListeners();
+
+        base.Release();
+    }
+
+
     void OnClickClose()
     {
         UIManager.Instance.PopUI();

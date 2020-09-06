@@ -37,7 +37,27 @@ namespace Framework.Module
 
 
 
+        /// <summary>
+        /// Ensures the module has exsited, if it doesn't exsit, create it.
+        /// </summary>
+        /// <param name="moduleName">Module name.</param>
+        /// <param name="arg">Argument.</param>
+        public T EnsureModule<T>(object arg = null) where T : BusinessModule
+        {
+            T module = GetModule<T>();
+            if( module == null )
+                module = CreateModule<T>(arg);
+            return module;
+        }
 
+        public BusinessModule EnsureModule(string moduleName, object arg = null)
+        {
+            BusinessModule module = GetModule(moduleName);
+            if( module == null )
+                module = CreateModule(moduleName, arg);
+            return module;
+        }
+        
         public T CreateModule<T>(object arg = null) where T : BusinessModule
         {
             return (T)CreateModule(typeof(T).Name, arg);
@@ -84,7 +104,9 @@ namespace Framework.Module
         public BusinessModule GetModule(string moduleName)
         {
             if( _moduleTable.ContainsKey(moduleName) )
+            {
                 return _moduleTable[moduleName];
+            }
             return null;
         }
 
@@ -110,10 +132,14 @@ namespace Framework.Module
 
         public void OpenModule(string moduleName, object arg = null)
         {
-            if( _moduleTable.ContainsKey(moduleName) )
+            BusinessModule module = EnsureModule(moduleName);
+            if (module != null)
             {
-                BusinessModule module = _moduleTable[moduleName];
                 module.Open(arg);
+            }
+            else
+            {
+                Debuger.LogWarning("ModuleManager", "The module does not exsit: " + moduleName);
             }
         }
 
@@ -126,17 +152,5 @@ namespace Framework.Module
             }
         }
 
-        /// <summary>
-        /// Ensures the module has exsited, if it doesn't exsit, create it.
-        /// </summary>
-        /// <param name="moduleName">Module name.</param>
-        /// <param name="arg">Argument.</param>
-        public BusinessModule EnsureModule(string moduleName, object arg = null)
-        {
-            BusinessModule module = GetModule(moduleName);
-            if( module == null )
-                module = CreateModule(moduleName, arg);
-            return module;
-        }
     }
 }

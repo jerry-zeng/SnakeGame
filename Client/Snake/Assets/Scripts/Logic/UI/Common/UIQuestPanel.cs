@@ -21,6 +21,14 @@ public class UIQuestPanel : UIBasePanel
 
         btn_Close.onClick.AddListener(OnClickClose);
     }
+    
+    public override void Release()
+    {
+        btn_Close.onClick.RemoveAllListeners();
+
+        base.Release();
+    }
+
 
     void OnClickClose()
     {
@@ -32,7 +40,7 @@ public class UIQuestPanel : UIBasePanel
         base.Show(args);
 
         // load quest list
-        questModule = ModuleManager.Instance.GetModule<QuestModule>();
+        questModule = ModuleManager.Instance.EnsureModule<QuestModule>();
 
         listView.SetData( questModule.GetQuestList() );
     }

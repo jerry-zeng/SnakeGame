@@ -13,7 +13,8 @@ namespace Framework.Module
             { 
                 if( _instance == null )
                 {
-                    lock( _thread_locker ){
+                    lock( _thread_locker )
+                    {
                         if( _instance == null ){
                             _instance = new T();
                             _instance.Init();

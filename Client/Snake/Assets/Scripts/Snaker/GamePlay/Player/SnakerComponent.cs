@@ -18,10 +18,6 @@ namespace GamePlay
             _owner = null;
         }
 
-        public virtual void EnterFrame(int frame)
-        {
-            if( _owner == null )
-                return;
-        }
+        public abstract void EnterFrame(int frame);
     }
 }

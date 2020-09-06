@@ -62,13 +62,14 @@ namespace Framework.UI
             }
 
             Cache();
-            UIManager.Instance.uiRoot = this;
         }
 
 
         void Start () 
         {
             DontDestroyOnLoad(CachedGameObject);
+
+            UIManager.Instance.uiRoot = this;
         }
 
         void OnClickMask()

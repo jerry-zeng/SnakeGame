@@ -41,6 +41,8 @@ public class UIUpdatePanel : UIBasePanel
 
     void Update()
     {
+        PatchManager.Instance.Update();
+
         curState = PatchManager.Instance.CurrentState;
         progress = PatchManager.Instance.PatchProgress;
 

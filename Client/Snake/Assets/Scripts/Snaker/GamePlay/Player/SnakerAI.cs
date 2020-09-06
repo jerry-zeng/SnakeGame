@@ -61,8 +61,6 @@ namespace GamePlay
 
         public override void EnterFrame(int frame)
         {
-            base.EnterFrame(frame);
-
             if( _owner == null || _owner.IsDead )
                 return;
 

@@ -86,7 +86,7 @@ public class UILoginPanel : UIBasePanel
     {
         if( isUseNameValid && isPasswordValid )
         {
-            LoginModule loginModule = ModuleManager.Instance.GetModule(ModuleDef.LoginModule) as LoginModule;
+            LoginModule loginModule = ModuleManager.Instance.EnsureModule<LoginModule>();
             loginModule.Login( (uint)0, input_userName.text, input_password.text );
         }
     }

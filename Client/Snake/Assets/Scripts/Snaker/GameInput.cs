@@ -10,9 +10,9 @@ namespace GamePlay
     {
         public static UnityAction<int,float> onVKey;
 
-        private float DefaultSpeedValue = Snaker.InitMoveSpeed;
+        private float DefaultSpeedValue = 1;
 
-        [SerializeField, Range(Snaker.InitMoveSpeed, 5)]
+        [SerializeField, Range(2, 5)]
         private int SpeedUpValue = 2;
 
 

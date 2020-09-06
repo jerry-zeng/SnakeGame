@@ -27,6 +27,16 @@ public class UISettingPanel : UIBasePanel
         btn_SwitchSE.onClick.AddListener(OnClickSwitchSE);
     }
 
+    public override void Release()
+    {
+        btn_Close.onClick.RemoveAllListeners();
+        btn_SwitchBGM.onClick.RemoveAllListeners();
+        btn_SwitchSE.onClick.RemoveAllListeners();
+
+        base.Release();
+    }
+
+
     void OnClickClose()
     {
         UIManager.Instance.HideUI(CachedGameObject.name);
@@ -46,7 +56,7 @@ public class UISettingPanel : UIBasePanel
     {
         base.Show(args);
 
-
+        
     }
 
 

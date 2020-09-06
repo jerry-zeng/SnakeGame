@@ -28,7 +28,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 
-namespace Framework.Network
+namespace Framework.Network.Kcp
 {
     public class KCPSocket
     {

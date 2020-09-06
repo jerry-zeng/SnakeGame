@@ -23,6 +23,16 @@ public class UIRoomSearchPanel : UIBasePanel
         btn_Cancel.onClick.AddListener(OnClickCancel);
     }
 
+    public override void Release()
+    {
+        input_roomIP.onEndEdit.RemoveAllListeners();
+        btn_Confirm.onClick.RemoveAllListeners();
+        btn_Cancel.onClick.RemoveAllListeners();
+
+        base.Release();
+    }
+
+
     void ValidateInputRoomIP(string value)
     {
         if( string.IsNullOrEmpty(value) ){
@@ -40,10 +50,16 @@ public class UIRoomSearchPanel : UIBasePanel
 
     void OnClickConfirm()
     {
-        if( isRoomIPValid )
-            this.Log("OnClickConfirm()");
-        
-        HideSelf();
+        if (isRoomIPValid)
+        {
+
+            HideSelf();
+        }
+        else
+        {
+            Debuger.LogError("invalid ip");
+        }
+        this.Log("OnClickConfirm()");
     }
 
     void OnClickCancel()
@@ -56,11 +72,4 @@ public class UIRoomSearchPanel : UIBasePanel
         UIManager.Instance.HideUI(CachedGameObject.name);
     }
 
-
-    public override void Hide()
-    {
-        input_roomIP.text = "";
-
-        base.Hide();
-    }
 }

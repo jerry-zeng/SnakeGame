@@ -10,9 +10,10 @@ using Framework.Module;
 public class UIRoomLobbyPanel : UIBasePanel 
 {
     public Button btn_ShowHost;
+
     public Button btn_JoinRoom;
     public Button btn_Ready;
-    public Button btn_Test;
+
     public Button btn_Back;
 
     public UIListView listView;
@@ -27,9 +28,19 @@ public class UIRoomLobbyPanel : UIBasePanel
         btn_ShowHost.onClick.AddListener(OnClickShowHost);
         btn_JoinRoom.onClick.AddListener(OnClickJoinRoom);
         btn_Ready.onClick.AddListener(OnClickReady);
-        btn_Test.onClick.AddListener(OnClickTest);
         btn_Back.onClick.AddListener(OnClickBack);
     }
+
+    public override void Release()
+    {
+        btn_ShowHost.onClick.RemoveAllListeners();
+        btn_JoinRoom.onClick.RemoveAllListeners();
+        btn_Ready.onClick.RemoveAllListeners();
+        btn_Back.onClick.RemoveAllListeners();
+
+        base.Release();
+    }
+
 
     void OnClickShowHost()
     {
@@ -46,11 +57,6 @@ public class UIRoomLobbyPanel : UIBasePanel
         pvpModule.GetReady();
     }
 
-    void OnClickTest()
-    {
-        pvpModule.Test();
-    }
-
     void OnClickBack()
     {
         pvpModule.Close();
@@ -61,7 +67,9 @@ public class UIRoomLobbyPanel : UIBasePanel
     {
         base.Show(args);
 
-        pvpModule = ModuleManager.Instance.GetModule<PVPModule>();
+        pvpModule = ModuleManager.Instance.EnsureModule<PVPModule>();
+
+        UpdatePlayerList();
     }
 
     public override void Hide()
@@ -69,5 +77,10 @@ public class UIRoomLobbyPanel : UIBasePanel
         pvpModule = null;
 
         base.Hide();
+    }
+
+    void UpdatePlayerList()
+    {
+
     }
 }

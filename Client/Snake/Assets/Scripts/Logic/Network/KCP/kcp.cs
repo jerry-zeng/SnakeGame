@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Framework.Network
+namespace Framework.Network.Kcp
 {
     public class KCP
     {

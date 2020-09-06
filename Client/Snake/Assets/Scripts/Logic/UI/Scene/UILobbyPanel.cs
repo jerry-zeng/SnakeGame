@@ -27,7 +27,7 @@ public class UILobbyPanel : UIBasePanel
     {
         base.Setup();
 
-        lobbyModule = ModuleManager.Instance.GetModule<LobbyModule>();
+        lobbyModule = ModuleManager.Instance.EnsureModule<LobbyModule>();
 
         btn_UserIcon.onClick.AddListener(OnClickUseIcon);
 

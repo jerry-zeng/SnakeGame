@@ -20,6 +20,14 @@ public class UIMainDetailPanel : UIBasePanel
         btn_Receive.onClick.AddListener(OnClickReceive);
     }
 
+    public override void Release()
+    {
+        btn_Receive.onClick.RemoveAllListeners();
+
+        base.Release();
+    }
+
+
     void OnClickReceive()
     {
         UIManager.Instance.PopUI();

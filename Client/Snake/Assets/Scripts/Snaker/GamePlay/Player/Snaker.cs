@@ -99,11 +99,10 @@ namespace GamePlay
             get{ return _frame; }
         }
 
-        public const float InitMoveSpeed = 2f;
 
         protected Vector3 _inputDirection;
         protected Vector3 _moveDirection;
-        protected float _moveSpeed = InitMoveSpeed;
+        protected float _moveSpeed;
 
         protected bool _isDead = false;
         public bool IsDead
@@ -132,7 +131,7 @@ namespace GamePlay
         SnakerNode hitNode = null;
 
 
-        public Snaker(PlayerData player, Vector3 initPos)
+        public Snaker(PlayerData player, Vector3 initPos, float initSpeed = 0f)
         {
             _ownerPlayer = player;
 
@@ -157,7 +156,7 @@ namespace GamePlay
             _isDead = false;
 
             // input
-            _moveSpeed = InitMoveSpeed;
+            _moveSpeed = initSpeed;
             _inputDirection = new Vector3();
             _moveDirection = new Vector3(0f, 1f, 0f);
 
@@ -258,9 +257,15 @@ namespace GamePlay
             {
             case (int)GameVKey.MoveX:
                 _inputDirection.x = arg;
+                // 给个初始速度 
+                if (_moveSpeed == 0f)
+                    _moveSpeed = 1f;
             break;
             case (int)GameVKey.MoveY:
                 _inputDirection.y = arg;
+                // 给个初始速度 
+                if (_moveSpeed == 0f)
+                    _moveSpeed = 1f;
             break;
             case (int)GameVKey.SpeedUp:
                 _moveSpeed = arg;
