@@ -50,6 +50,12 @@ public class PVEModule : BusinessModule
         param.randSeed = System.DateTime.Now.Millisecond;
         param.mode = GameProtocol.GameMode.TimelimitPVE;
 
+        int stageID = (int)param.mode;
+        var data = CSVTableLoader.GetTableContainer("Stage").GetRow(stageID.ToString());
+        param.mapID = data["Map ID"].IntValue;
+        param.limitTime = data["Limit Time"].FloatValue;
+        param.limitPlayer = data["Limit Player"].IntValue;
+
         OnEnterBattleReply(param);
     }
 

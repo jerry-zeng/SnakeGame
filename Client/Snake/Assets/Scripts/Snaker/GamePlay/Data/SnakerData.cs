@@ -1,12 +1,13 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using ProtoBuf;
 
 namespace GamePlay
 {
+    [ProtoContract]
     public class SnakerData 
     {
-        public int id;
-
-        public int length;
+        [ProtoMember(1)] public int id;
+        [ProtoMember(2)] public int length;
     }
 }

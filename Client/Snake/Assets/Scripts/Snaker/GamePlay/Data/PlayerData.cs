@@ -1,21 +1,23 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using ProtoBuf;
 
 namespace GamePlay
 {
+    [ProtoContract]
     public class PlayerData 
     {
-        public uint userID;
-        public string userName;
+        [ProtoMember(1)] public uint userID;
+        [ProtoMember(2)] public string userName;
 
         /// <summary>
         /// The ID in this game, usually is the player index.
         /// </summary>
-        public int playerID;
-        public int teamID;
-        public int aiID;
-        public int score;
+        [ProtoMember(3)] public int playerID;
+        [ProtoMember(4)] public int teamID;
+        [ProtoMember(5)] public int aiID;
+        [ProtoMember(6)] public int score;
 
-        public SnakerData snakerData;
+        [ProtoMember(7)] public SnakerData snakerData;
     }
 }
