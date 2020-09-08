@@ -40,6 +40,20 @@ public class UILobbyPanel : UIBasePanel
         btn_Ranking.onClick.AddListener(OnClickRanking);
     }
 
+    public override void Release()
+    {
+        btn_UserIcon.onClick.RemoveAllListeners();
+        btn_PVE.onClick.RemoveAllListeners();
+        btn_PVP.onClick.RemoveAllListeners();
+        btn_Setting.onClick.RemoveAllListeners();
+        btn_Quest.onClick.RemoveAllListeners();
+        btn_Mail.onClick.RemoveAllListeners();
+        btn_Ranking.onClick.RemoveAllListeners();
+
+        base.Release();
+    }
+
+
     void OnClickUseIcon()
     {
         /*

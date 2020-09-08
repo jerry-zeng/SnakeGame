@@ -24,6 +24,9 @@ namespace GamePlay
             get{ return _currentFrame; }
         }
 
+        private bool m_pause = false;
+        public bool isPaused {get {return m_pause;}}
+
 
         public GameContext(GameParam param)
         {
@@ -40,5 +43,14 @@ namespace GamePlay
             _currentFrame = frame;
         }
 
+
+        public void Pause()
+		{
+			m_pause = true;
+		}
+        public void Resume()
+		{
+			m_pause = false;
+		}
     }
 }

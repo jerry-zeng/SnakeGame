@@ -22,6 +22,7 @@ namespace GamePlay
             }
         }
 
+        private GameCamera _gameCamera;
         private GameMapView _mapView;
         private LinkedList<FoodView> _foodViewList = new LinkedList<FoodView>();
         private LinkedList<SnakerActor> _snakerActorList = new LinkedList<SnakerActor>();
@@ -29,15 +30,10 @@ namespace GamePlay
         List<FoodView> removeFoodView = new List<FoodView>();
         List<SnakerActor> removeSnakerActor = new List<SnakerActor>();
 
-        private int _focusPlayerID = 0;
-        public int FocusPlayerID
-        {
-            get{ return _focusPlayerID; }
-        }
 
         private BattleEngine battleEngine;
+        private int _focusPlayerId;
 
-        bool _paused = false;
         float _nextTickTime = 0f;
         int _frame = 0;
         float _dt = 0f;
@@ -50,76 +46,52 @@ namespace GamePlay
 
         void Start()
         {
-            GameInput.onVKey = OnVKey;
-
-            _paused = false;
             _nextTickTime = 0f;
             _frame = 0;
 
             battleEngine = BattleEngine.Instance;
+            _gameCamera = GameCamera.current;
 
             EventManager.Instance.RegisterEvent<Snaker,object>("OnSnakerDead", OnSnakerDead);
-            EventManager.Instance.RegisterEvent<Food,object>("OnFoodEaten", OnFoodEaten);
-
-            GameInput.DisableInput();
         }
 
         protected override void OnDestroy()
         {
             battleEngine = null;
-            GameInput.onVKey = null;
+
+            ResetGameCamera();
+            _gameCamera = null;
 
             EventManager.Instance.UnregisterEvent<Snaker,object>("OnSnakerDead", OnSnakerDead);
-            EventManager.Instance.UnregisterEvent<Food,object>("OnFoodEaten", OnFoodEaten);
 
             base.OnDestroy();
         }
 
-        public void OnPlayerReady()
+        void OnSnakerDead(Snaker snaker, object killer)
         {
-            var userData = UserManager.Instance.UserData;
-            int snakerID = UserManager.Instance.CurrentSnakerID;
-
-            PlayerData player = new PlayerData();
-            player.playerID = battleEngine.GenerateNewPlayerID();
-            player.teamID = 1;
-            player.snakerData = new SnakerData(){id = snakerID, length = 0 };
-            player.aiID = 0;
-            player.userID = userData.id;
-            player.userName = userData.userName;
-
-            Vector3 pos = battleEngine.Map.BoundRect.center.ToVector3();
-            battleEngine.CreateSnaker(player, pos);
-
-            GameInput.EnableInput();
-
-            FocusOnPlayer(player.playerID);
-
-            if(!battleEngine.IsRunning)
-                battleEngine.StartRunning();
+            if( _focusPlayerId == snaker.PlayerID )
+            {
+                _focusPlayerId = 0;
+                SyncGameCamera();
+            }
         }
 
         public void FocusOnPlayer(int playerID)
         {
-            _focusPlayerID = playerID;
+            _focusPlayerId = playerID;
+            SyncGameCamera();
         }
-
-        public void PauseGame()
+        void SyncGameCamera()
         {
-            _paused = true;
-
-            GameInput.DisableInput();
+            if (_gameCamera != null)
+                _gameCamera.SetFocusSnaker(_focusPlayerId);
         }
-        public void ResumeGame()
+        void ResetGameCamera()
         {
-            _paused = false;
+            _focusPlayerId = 0;
 
-            GameInput.EnableInput();
-        }
-
-        void OnVKey(int vkey, float arg)
-        {
-            BattleEngine.Instance.InputVKey((int)vkey, arg, _focusPlayerID);
+            if (_gameCamera != null)
+                _gameCamera.Reset();
         }
 
         /*
@@ -158,45 +130,17 @@ namespace GamePlay
             }
         }
 
-        private void OnSnakerDead(Snaker snaker, object killer)
-        {
-            if( snaker != null && snaker.PlayerID == _focusPlayerID )
-            {
-                _focusPlayerID = 0;
-                GameInput.DisableInput();
-
-                Scheduler.ScheduleOnce( 0.5f, ()=>
-                {
-                    MessageBox.Show("Revive or Quit this game?",
-                                    "Quit", ()=>{
-                        BattleEngine.Instance.EndBattle();
-                        MessageBox.Hide();
-                        EventManager.Instance.SendEvent(EventDef.OnLeaveBattle);
-                    },
-                                    "Revive", ()=>{
-                        OnPlayerReady();
-                        MessageBox.Hide();
-                    });
-                } );
-
-            }
-        }
-
-        private void OnFoodEaten(Food food, object killer)
-        {
-            
-        }
-
 
         void Update()
         {
-            if( battleEngine == null || !battleEngine.IsRunning )
+            if( battleEngine == null || !battleEngine.isRunning )
                 return;
 
             if( _mapView == null )
                 InitMap();
 
-            if( _paused )
+            // 只有部分玩法有暂停
+            if( battleEngine.Context.isPaused )
                 return;
 
             // 1. sync actors
@@ -206,17 +150,20 @@ namespace GamePlay
             _dt = Time.deltaTime;
 
             _nextTickTime -= _dt;
-
             if( _nextTickTime <= 0f )
             {
                 _frame++;
-
-                Tick();
 
                 while(_nextTickTime <= 0f){
                     _nextTickTime += BattleEngine.TICK_INTERVAL;
                 }
             }
+
+            if (_frame > battleEngine.Context.CurrentFrame)
+            {
+                return;
+            }
+
 
             // 3. update actors
             if( _mapView != null )
@@ -273,11 +220,6 @@ namespace GamePlay
                     _snakerActorList.AddLast(kvs.Value.View);
                 }
             }
-        }
-
-        void Tick()
-        {
-            battleEngine.EnterFrame(_frame);
         }
 
 

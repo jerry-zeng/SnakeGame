@@ -13,11 +13,13 @@ namespace GamePlay
         /// <summary>
         /// The TICk times per seconds.
         /// </summary>
-        public const int TICKS_PER_SECONDS = 20;
+        public const int TICKS_PER_SECONDS = 30;
         public static readonly float TICK_INTERVAL = 1f / (float)TICKS_PER_SECONDS;
 
         // params
         private GameContext _context;
+        private Dictionary<int, PlayerData> _mapPlayerData = new Dictionary<int, PlayerData>();
+
 
         // game objects
         private GameMap _map;
@@ -30,11 +32,14 @@ namespace GamePlay
         List<Food> removeFoodList = new List<Food>();
         List<int> removeSnakerList = new List<int>();
 
-
         // game var
-        private bool _isRunning;
         private int _curPlayerID = 1;
+        private bool _isRunning = false;
 
+        public bool isRunning
+        {
+            get{ return _isRunning; }
+        }
 
         public GameContext Context
         {
@@ -56,15 +61,6 @@ namespace GamePlay
             get{ return _snakerList; }
         }
 
-        public bool IsRunning
-        {
-            get{ return _isRunning; }
-        }
-
-        protected override void Init()
-        {
-            base.Init();
-        }
 
         public int GenerateNewPlayerID()
         {
@@ -74,9 +70,10 @@ namespace GamePlay
         public void EnterBattle(GameParam param)
         {
             if( _isRunning ){
-                this.LogWarning("The game is running, don't start it again!");
+                this.LogWarning("The game is running, don't run it!");
                 return;
             }
+            _isRunning = true;
 
             _map = new GameMap();
             _map.Load(param.mapID);
@@ -92,15 +89,9 @@ namespace GamePlay
 
             _context.EnterFrame(0);
 
-            _curPlayerID = 1;
-
             this.Log("StartBattle()");
         }
 
-        public void StartRunning()
-        {
-            _isRunning = true;
-        }
 
         public void EndBattle()
         {
@@ -108,7 +99,6 @@ namespace GamePlay
                 this.LogWarning("The game wasn't running, don't stop it!");
                 return;
             }
-
             _isRunning = false;
 
             _map.Unload();
@@ -136,10 +126,6 @@ namespace GamePlay
 
         public void EnterFrame(int frame)
         {
-            if( !_isRunning ){
-                return;
-            }
-
             // record new frame
             if( frame < 0 ){
                 _context.EnterFrame(_context.CurrentFrame + 1);
@@ -201,23 +187,61 @@ namespace GamePlay
         }
 
 
-        public void InputVKey(int vkey, float arg, int playerID)
+        public void InputVKey(int vkey, float arg, int playerId)
         {
             if( !_isRunning ){
                 return;
             }
 
-            Snaker snaker = GetSnakerByID(playerID);
+            Snaker snaker = GetSnakerByID(playerId);
             if( snaker != null )
                 snaker.InputKey(vkey, arg);
             else
-                HandleOtherInput(vkey, arg, playerID);
+                HandleOtherInput(vkey, arg, playerId);
         }
 
-        void HandleOtherInput(int vkey, float arg, int playerID)
+        void HandleOtherInput(int vkey, float arg, int playerId)
         {
-            
+            if ( DoVKey_CreatePlayer(vkey, arg, playerId)
+                || DoVKey_RemovePlayer(vkey, arg, playerId)
+                )
+            {
+                // Debuger.Log("BattleEngine", "HandleOtherInput: {0}, {1}, {2}", vkey, arg, playerId);
+            }
         }
+        bool DoVKey_CreatePlayer(int vkey, float arg, int playerId)
+        {
+            if (vkey == (int)GameVKey.CreatePlayer)
+            {
+                CreatePlayerSnaker(playerId);
+                Debuger.Log("BattleEngine", "DoVKey_CreatePlayer: {0}", playerId);
+                return true;
+            }
+            return false;
+        }
+        bool DoVKey_RemovePlayer(int vkey, float arg, int playerId)
+        {
+            if (vkey == (int)FSPVKeyBase.GAME_EXIT)
+            {
+                RemoveSnakerByID(playerId);
+                Debuger.Log("BattleEngine", "DoVKey_RemovePlayer: {0}", playerId);
+                return true;
+            }
+            return false;
+        }
+
+
+        #region Player
+        public void RegPlayerData(PlayerData data)
+        {
+			_mapPlayerData[data.playerID] = data;
+        }
+
+        public PlayerData GetPlayerData(int playerId)
+        {
+            return _mapPlayerData.ContainsKey(playerId)? _mapPlayerData[playerId] : null;
+        }
+        #endregion
 
         #region Snaker
         public void OnSnakerDead(Snaker snaker, object killer)
@@ -233,9 +257,18 @@ namespace GamePlay
             player.teamID = player.playerID;
             player.snakerData = new SnakerData(){ id = snakerID };
 
-            Vector3 pos = BattleEngine.Instance.GetMapRandomPosition();
+            Vector3 pos = GetMapRandomPosition();
 
             return CreateSnaker(player, pos, 1f);
+        }
+
+        // 已经注册的玩家
+        internal Snaker CreatePlayerSnaker(int playerId)
+        {
+             PlayerData player = GetPlayerData(playerId);
+             // TODO: 可以根据阵营选择出生点
+             Vector3 pos = GetMapRandomPosition();
+             return CreateSnaker(player, pos);
         }
 
         internal Snaker CreateSnaker(PlayerData data, Vector3 pos, float speed = 0f)
@@ -244,7 +277,7 @@ namespace GamePlay
                 return null;
 
             Snaker snaker = new Snaker(data, pos, speed);
-
+            // Debuger.Log("BattleEngine", "CreateSnaker: {0}", data.playerID);
             tobeAddSnakerList.Add( snaker );
 
             return snaker;

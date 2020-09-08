@@ -478,6 +478,9 @@ public class EasyTouch : MonoBehaviour {
 	// Display the simulation of the second finger
 	#if ((!UNITY_ANDROID && !UNITY_IPHONE && !UNITY_WP8 && !UNITY_BLACKBERRY) || UNITY_EDITOR)
 	void OnGUI(){
+		if (!enable)
+			return;
+
 		Vector2 finger = input.GetSecondFingerPosition();
 		if (finger!=new Vector2(-1,-1)){		
 			GUI.DrawTexture( new Rect(finger.x-16,Screen.height-finger.y-16,32,32),secondFingerTexture);

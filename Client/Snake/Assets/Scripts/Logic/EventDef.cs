@@ -11,4 +11,5 @@ public sealed partial class EventDef
     public const string OnLogin     = "OnLogin";
     public const string OnEnterBattle = "OnEnterBattle";
     public const string OnLeaveBattle = "OnLeaveBattle";
+    public const string OnGameEnd = "OnGameEnd";
 }

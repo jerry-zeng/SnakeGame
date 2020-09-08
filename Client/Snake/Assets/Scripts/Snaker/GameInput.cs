@@ -29,31 +29,30 @@ namespace GamePlay
         {
             _Enable = true;
 
-            if( _joystick != null ){
-                _joystick.enable = true;
-                _joystick.isActivated = true;
-            }
-            if( _easyButton != null ){
-                _easyButton.enable = true;
-                _easyButton.isActivated = true;
-            }
-            if( _easyTouch != null )
-                _easyTouch.enable = true;
+            UpdateInput();
         }
         public static void DisableInput()
         {
             _Enable = false;
 
+            UpdateInput();
+        }
+        static void UpdateInput()
+        {
             if( _joystick != null ){
-                _joystick.enable = false;
-                _joystick.isActivated = false;
+                _joystick.enable = _Enable;
+                _joystick.isActivated = _Enable;
+                _joystick.enabled = _Enable;
             }
             if( _easyButton != null ){
-                _easyButton.enable = false;
-                _easyButton.isActivated = false;
+                _easyButton.enable = _Enable;
+                _easyButton.isActivated = _Enable;
+                _easyButton.enabled = _Enable;
             }
-            if( _easyTouch != null )
-                _easyTouch.enable = false;
+            if( _easyTouch != null ){
+                _easyTouch.enable = _Enable;
+                _easyTouch.enabled = _Enable;
+            }
         }
 
         void Start()
@@ -63,6 +62,8 @@ namespace GamePlay
             _easyTouch = GetComponentInChildren<EasyTouch>();
             _joystick = GetComponentInChildren<EasyJoystick>();
             _easyButton = GetComponentInChildren<EasyButton>();
+
+            UpdateInput();
         }
 
         void OnEnable()

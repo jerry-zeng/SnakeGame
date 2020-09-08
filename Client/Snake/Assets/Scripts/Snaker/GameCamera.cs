@@ -15,6 +15,7 @@ namespace GamePlay
         private Camera _camera;
         private Vector2 _viewSize;
 
+        private int _focusPlayerId;
         private Snaker _focusSnaker;
 
         void Awake()
@@ -31,37 +32,36 @@ namespace GamePlay
             float height = _camera.orthographicSize;
             float width = (float)Screen.width / (float)Screen.height * height;
             _viewSize = new Vector2(width, height);
-
-            EventManager.Instance.RegisterEvent<Snaker,object>("OnSnakerDead", OnSnakerDead);
         }
 
-        void OnDesotroy()
+        void OnDestroy()
         {
             current = null;
-
-            EventManager.Instance.UnregisterEvent<Snaker,object>("OnSnakerDead", OnSnakerDead);
+            _focusSnaker = null;
         }
 
-        void OnSnakerDead(Snaker snaker, object killer)
+
+        public void SetFocusSnaker(int playerId)
         {
-            if( snaker != null && _focusSnaker != null && 
-               snaker.PlayerID == _focusSnaker.PlayerID )
-            {
+            _focusPlayerId = playerId;
+            if (_focusPlayerId <= 0)
                 _focusSnaker = null;
-            }
         }
 
-        public void SetFocusSnaker(Snaker snaker)
+        public void Reset()
         {
-            _focusSnaker = snaker;
+            _focusPlayerId = 0;
+            _focusSnaker = null;
         }
 
         void LateUpdate()
         {
-            if( BattleEngine.Instance.IsRunning )
+            if( BattleEngine.Instance.isRunning )
             {
-                if(_focusSnaker == null)
-                    _focusSnaker = BattleEngine.Instance.GetSnakerByID(BattleView.Instance.FocusPlayerID);
+                if (_focusSnaker == null && _focusPlayerId > 0)
+                {
+                    _focusSnaker = BattleEngine.Instance.GetSnakerByID(_focusPlayerId);
+                }
 
                 if( _focusSnaker != null )
                 {

@@ -53,8 +53,10 @@ namespace Framework
             {
                 _eventTable[eventName] = Delegate.Remove(prevHandlers, handler);
             }
-            else
-                LogWarning( "Not found event by {0}", eventName );
+            // else
+            // {
+            //     LogWarning( "Not found event by {0}", eventName );
+            // }
         }
 
         private void LogWarning( string format, params object[] args )
@@ -141,8 +143,9 @@ namespace Framework
             if (handler != null) {
                 handler();
             }
-            else
-                LogWarning( "Not found any event handler (Action) by {0}", eventName );
+            else{
+                // LogWarning( "Not found any event handler (Action) by {0}", eventName );
+            }
         }
 
         public void SendEvent<T>(string eventName, T arg1)
@@ -151,8 +154,9 @@ namespace Framework
             if (handler != null) {
                 handler(arg1);
             }
-            else
-                LogWarning( "Not found any event handler (Action<T>) by {0}", eventName );
+            else{
+                // LogWarning( "Not found any event handler (Action<T>) by {0}", eventName );
+            }
         }
 
         public void SendEvent<T, U>(string eventName, T arg1, U arg2)
@@ -161,8 +165,9 @@ namespace Framework
             if (handler != null) {
                 handler(arg1, arg2);
             }
-            else
-                LogWarning( "Not found any event handler (Action<T, U>) by {0}", eventName );
+            else{
+                // LogWarning( "Not found any event handler (Action<T, U>) by {0}", eventName );
+            }
         }
 
         public void SendEvent<T, U, V>(string eventName, T arg1, U arg2, V arg3)
@@ -171,8 +176,9 @@ namespace Framework
             if (handler != null) {
                 handler(arg1, arg2, arg3);
             }
-            else
-                LogWarning( "Not found any event handler (Action<T, U, V>) by {0}", eventName );
+            else{
+                // LogWarning( "Not found any event handler (Action<T, U, V>) by {0}", eventName );
+            }
         }
 
         public void SendEvent<T, U, V, W>(string eventName, T arg1, U arg2, V arg3, W arg4)
@@ -181,8 +187,9 @@ namespace Framework
             if (handler != null) {
                 handler(arg1, arg2, arg3, arg4);
             }
-            else
-                LogWarning( "Not found any event handler (Action<T, U, V, W>) by {0}", eventName );
+            else{
+                // LogWarning( "Not found any event handler (Action<T, U, V, W>) by {0}", eventName );
+            }
         }
 
         public void SendEvent(string eventName, object[] args)
@@ -191,8 +198,9 @@ namespace Framework
             if (handler != null) {
                 handler(args);
             }
-            else
-                LogWarning( "Not found any event handler (Action<object[]>) by {0}", eventName );
+            else{
+                // LogWarning( "Not found any event handler (Action<object[]>) by {0}", eventName );
+            }
         }
         #endregion
 

@@ -8,6 +8,12 @@ using GamePlay;
 
 public class PVEModule : BusinessModule 
 {
+    private PVEGame pveGame;
+    public PVEGame currentGame 
+    {
+        get{ return pveGame; }
+    }
+
     public override void Open(object arg)
     {
         base.Open(arg);
@@ -24,6 +30,12 @@ public class PVEModule : BusinessModule
 
     void OnLeaveBattle()
     {
+        if (pveGame != null)
+        {
+            pveGame.Stop();
+            pveGame = null;
+        }
+
         ClearBattleView();
 
         ModuleManager.Instance.OpenModule(ModuleDef.LobbyModule);
@@ -32,6 +44,7 @@ public class PVEModule : BusinessModule
 
     void RequestEnterBattle()
     {
+        // 服务器下推
         GameParam param = new GameParam();
         param.gameID = 1;
         param.randSeed = System.DateTime.Now.Millisecond;
@@ -39,14 +52,19 @@ public class PVEModule : BusinessModule
 
         OnEnterBattleReply(param);
     }
+
     void OnEnterBattleReply(GameParam param)
     {
-        int stageID = (int)param.mode;
-        var data = CSVTableLoader.GetTableContainer("Stage").GetRow(stageID.ToString());
-        param.mapID = data["Map ID"].IntValue;
-        param.limitTime = data["Limit Time"].FloatValue;
-        param.limitPlayer = data["Limit Player"].IntValue;
-        BattleEngine.Instance.EnterBattle(param);
+        if (pveGame != null)
+        {
+            Debuger.LogError("PVEModule", "The pveGame is already created!");
+            return;
+        }
+
+        pveGame = new PVEGame();
+        pveGame.Start(param);
+
+        EventManager.Instance.SendEvent(EventDef.OnEnterBattle);
 
         CreateBattleView();
     }
@@ -59,10 +77,12 @@ public class PVEModule : BusinessModule
         GameObject prefab = Resources.Load<GameObject>("GameInput");
         GameObject go = GameObject.Instantiate(prefab);
         go.name = "GameInput";
+        GameInput.DisableInput();
 
         go = new GameObject("BattleView");
         go.AddComponent<BattleView>();
     }
+
 
     void ClearBattleView()
     {
