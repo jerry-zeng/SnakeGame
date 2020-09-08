@@ -59,6 +59,8 @@ public class UIRoomHostPanel : UIBasePanel
     {
         base.Show(args);
 
+        EventManager.Instance.RegisterEvent("OnHostChanged", UpdateHost);
+
         hostModule = ModuleManager.Instance.EnsureModule<HostModule>();
 
         UpdateHost();
@@ -66,6 +68,8 @@ public class UIRoomHostPanel : UIBasePanel
 
     public override void Hide()
     {
+        EventManager.Instance.UnregisterEvent("OnHostChanged", UpdateHost);
+
         hostModule = null;
 
         base.Hide();
@@ -74,7 +78,7 @@ public class UIRoomHostPanel : UIBasePanel
 
     void UpdateHost()
     {
-        if (hostModule.HasRoom())
+        if (hostModule.HasHost())
         {
             lab_roomIP.text = string.Format("{0}:{1}", hostModule.ip, hostModule.port);
         }

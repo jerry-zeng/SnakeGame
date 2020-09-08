@@ -26,6 +26,8 @@ public class PVEModule : BusinessModule
     public override void Close()
     {
         EventManager.Instance.UnregisterEvent(EventDef.OnLeaveBattle, OnLeaveBattle);
+
+        base.Close();
     }
 
     void OnLeaveBattle()

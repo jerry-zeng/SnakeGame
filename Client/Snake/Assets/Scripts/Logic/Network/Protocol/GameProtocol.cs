@@ -109,6 +109,14 @@ namespace GameProtocol
       get { return _authId; }
       set { _authId = value; }
     }
+    private bool _useLocal = default(bool);
+    [global::ProtoBuf.ProtoMember(13, IsRequired = false, Name=@"useLocal", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue(default(bool))]
+    public bool useLocal
+    {
+      get { return _useLocal; }
+      set { _useLocal = value; }
+    }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
       { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
@@ -246,16 +254,24 @@ namespace GameProtocol
       get { return _sid; }
       set { _sid = value; }
     }
-    private int _isReady = default(int);
-    [global::ProtoBuf.ProtoMember(5, IsRequired = false, Name=@"isReady", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
-    [global::System.ComponentModel.DefaultValue(default(int))]
-    public int isReady
+    private bool _isReady = default(bool);
+    [global::ProtoBuf.ProtoMember(5, IsRequired = false, Name=@"isReady", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue(default(bool))]
+    public bool isReady
     {
       get { return _isReady; }
       set { _isReady = value; }
     }
+    private int _teamId = default(int);
+    [global::ProtoBuf.ProtoMember(6, IsRequired = false, Name=@"teamId", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    [global::System.ComponentModel.DefaultValue(default(int))]
+    public int teamId
+    {
+      get { return _teamId; }
+      set { _teamId = value; }
+    }
     private byte[] _customPlayerData = null;
-    [global::ProtoBuf.ProtoMember(6, IsRequired = false, Name=@"customPlayerData", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::ProtoBuf.ProtoMember(7, IsRequired = false, Name=@"customPlayerData", DataFormat = global::ProtoBuf.DataFormat.Default)]
     [global::System.ComponentModel.DefaultValue(null)]
     public byte[] customPlayerData
     {
@@ -286,13 +302,13 @@ namespace GameProtocol
       get { return _players; }
     }
   
-    private byte[] _customPlayerData = null;
-    [global::ProtoBuf.ProtoMember(3, IsRequired = false, Name=@"customPlayerData", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    private byte[] _customGameParam = null;
+    [global::ProtoBuf.ProtoMember(3, IsRequired = false, Name=@"customGameParam", DataFormat = global::ProtoBuf.DataFormat.Default)]
     [global::System.ComponentModel.DefaultValue(null)]
-    public byte[] customPlayerData
+    public byte[] customGameParam
     {
-      get { return _customPlayerData; }
-      set { _customPlayerData = value; }
+      get { return _customGameParam; }
+      set { _customGameParam = value; }
     }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)

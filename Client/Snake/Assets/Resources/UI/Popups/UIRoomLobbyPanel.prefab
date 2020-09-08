@@ -1047,6 +1047,7 @@ GameObject:
   - component: {fileID: 224371052191698436}
   - component: {fileID: 222295570505628668}
   - component: {fileID: 114913855807348220}
+  - component: {fileID: 2349957324087187166}
   m_Layer: 5
   m_Name: ItemPrototype
   m_TagString: Untagged
@@ -1112,6 +1113,20 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
+--- !u!114 &2349957324087187166
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1730422533038802}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5762106e5d16a2547b20882104e2e71d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  lab_PlayerInfo: {fileID: 114594193715957630}
+  lab_Ready: {fileID: 114693022251337046}
 --- !u!1 &1765994374440094
 GameObject:
   m_ObjectHideFlags: 0
@@ -1250,10 +1265,11 @@ MonoBehaviour:
   colliderType: 0
   btn_ShowHost: {fileID: 114893496856736836}
   btn_JoinRoom: {fileID: 114581559834915176}
+  lab_JoinRoom: {fileID: 114144082133688676}
   btn_Ready: {fileID: 114365037480209794}
-  btn_Test: {fileID: 0}
+  lab_Ready: {fileID: 114774506684167550}
   btn_Back: {fileID: 114871164320306094}
-  listView: {fileID: 0}
+  listView: {fileID: 114249549009753218}
 --- !u!1 &1966788057893068
 GameObject:
   m_ObjectHideFlags: 0

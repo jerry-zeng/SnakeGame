@@ -27,18 +27,21 @@ public class HostModule : BusinessModule
     }
 
 
-    public bool HasRoom()
+    public bool HasHost()
     {
         return !string.IsNullOrEmpty(ip) && port > 0;
     }
 
     public void StartHost()
     {
-        if (!HasRoom())
+        if (!HasHost())
         {
             ip = "127.0.0.1";
             port = 1001;
             Debuger.Log("HostModule", string.Format("start host: {0}-{1}", ip, port));
+
+            EventManager.Instance.SendEvent<string, int>("OnStartHost", ip, port);
+            EventManager.Instance.SendEvent("OnHostChanged");
         }
         else
         {
@@ -48,11 +51,14 @@ public class HostModule : BusinessModule
 
     public void StopHost()
     {
-        if (HasRoom())
+        if (HasHost())
         {
             ip = "";
             port = 0;
             Debuger.Log("HostModule", "The host is stoped");
+
+            EventManager.Instance.SendEvent("OnStopHost");
+            EventManager.Instance.SendEvent("OnHostChanged");
         }
     }
 }

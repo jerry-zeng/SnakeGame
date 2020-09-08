@@ -6,13 +6,16 @@ using UnityEngine.Events;
 using Framework;
 using Framework.UI;
 using Framework.Module;
+using GamePlay;
 
 public class UIRoomLobbyPanel : UIBasePanel 
 {
     public Button btn_ShowHost;
 
     public Button btn_JoinRoom;
+    public Text lab_JoinRoom;
     public Button btn_Ready;
+    public Text lab_Ready;
 
     public Button btn_Back;
 
@@ -67,20 +70,47 @@ public class UIRoomLobbyPanel : UIBasePanel
     {
         base.Show(args);
 
+        EventManager.Instance.RegisterEvent("OnRoomUpdate", UpdateRoom);
+
         pvpModule = ModuleManager.Instance.EnsureModule<PVPModule>();
 
-        UpdatePlayerList();
+        UpdateRoom();
     }
 
     public override void Hide()
     {
+        EventManager.Instance.UnregisterEvent("OnRoomUpdate", UpdateRoom);
+
         pvpModule = null;
 
         base.Hide();
     }
 
-    void UpdatePlayerList()
+    void UpdateRoom()
     {
+        PVPRoom room = pvpModule.CurrentRoom;
 
+        if (room.IsInRoom)
+        {
+            lab_JoinRoom.text = "退出房间";
+        }
+        else
+        {
+            lab_JoinRoom.text = "加入房间";
+        }
+
+        if (room.IsReady)
+        {
+            lab_Ready.text = "取消准备";
+        }
+        else
+        {
+            lab_Ready.text = "开始准备";
+        }
+
+        btn_JoinRoom.gameObject.SetActive(!room.IsReady);
+        btn_Ready.gameObject.SetActive(room.IsInRoom);
+
+        listView.SetData(room.players);
     }
 }

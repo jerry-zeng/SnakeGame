@@ -50,16 +50,17 @@ public class UIRoomSearchPanel : UIBasePanel
 
     void OnClickConfirm()
     {
+        this.Log("OnClickConfirm()");
         if (isRoomIPValid)
         {
-
             HideSelf();
+
+            EventManager.Instance.SendEvent<string>("TryToJoinRoom", input_roomIP.text);
         }
         else
         {
-            Debuger.LogError("invalid ip");
+            Toast.Show("Invalid ip", Toast.DURATION_SHORT);
         }
-        this.Log("OnClickConfirm()");
     }
 
     void OnClickCancel()
@@ -71,5 +72,4 @@ public class UIRoomSearchPanel : UIBasePanel
     {
         UIManager.Instance.HideUI(CachedGameObject.name);
     }
-
 }
