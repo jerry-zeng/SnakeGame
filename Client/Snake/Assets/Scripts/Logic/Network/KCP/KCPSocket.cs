@@ -130,8 +130,8 @@ namespace Framework.Network.Kcp
 
             if (m_ThreadRecv != null)
             {
-                m_ThreadRecv.Interrupt();
-                //m_ThreadRecv.Abort();
+                // m_ThreadRecv.Interrupt();  //这个会抛异常
+                m_ThreadRecv.Abort();
                 m_ThreadRecv = null;
             }
 

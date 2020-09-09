@@ -9,8 +9,8 @@ using Framework.Module;
 
 public class UIRoomHostPanel : UIBasePanel 
 {
-    public Text lab_roomIP;
     public Button btn_Close;
+    public Text lab_roomIP;
     public Button btn_StartServer;
     public Button btn_StopServer;
 

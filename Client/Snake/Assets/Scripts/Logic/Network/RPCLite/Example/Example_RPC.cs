@@ -28,7 +28,7 @@ namespace Framework.Network.RPC.Example
 #endif
         }
 
-        private void _RPC_Test_1(int arg1, int arg2, string arg3, byte[] arg4, byte[] arg5, IPEndPoint target)
+        private void _RPC_Test_1(IPEndPoint target, int arg1, int arg2, string arg3, byte[] arg4, byte[] arg5)
         {
             Debuger.Log("Example_RPC", "_RPC_Test_1() {0},{1},{2},{3},{4},{5}", arg1, arg2, arg3, UTF8Encoding.Default.GetString(arg4), UTF8Encoding.Default.GetString(arg5), target);
         }
@@ -103,7 +103,7 @@ namespace Framework.Network.RPC.Example
             
         }
 
-        private void _RPC_Test(int arg1, int arg2, string arg3, byte[] arg4, byte[] arg5, IPEndPoint target)
+        private void _RPC_Test(IPEndPoint target, int arg1, int arg2, string arg3, byte[] arg4, byte[] arg5)
         {
             Debuger.Log("HostB", "_RPC_Test() {0},{1},{2},{3},{4},{5}", arg1, arg2, arg3, UTF8Encoding.Default.GetString(arg4), UTF8Encoding.Default.GetString(arg5), target);
         }

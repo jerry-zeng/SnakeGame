@@ -7,6 +7,7 @@ using Framework;
 using Framework.UI;
 using Framework.Module;
 using EpochProtocol;
+using Framework.Network;
 
 public class UILoginPanel : UIBasePanel 
 {
@@ -87,7 +88,7 @@ public class UILoginPanel : UIBasePanel
         if( isUseNameValid && isPasswordValid )
         {
             LoginModule loginModule = ModuleManager.Instance.EnsureModule<LoginModule>();
-            loginModule.Login( (uint)0, input_userName.text, input_password.text );
+            loginModule.Login( (uint)new System.Random().Next(100000, 999999), input_userName.text, input_password.text );
         }
     }
 
@@ -97,5 +98,7 @@ public class UILoginPanel : UIBasePanel
 
         UserData data = UserManager.Instance.UserData;
         SetUserData(data.id, data.userName, data.password);
+
+        Debuger.Log("Login", "SelfIp: {0}", IPUtils.SelfIP);
     }
 }

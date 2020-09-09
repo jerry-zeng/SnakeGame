@@ -24,36 +24,33 @@
 * 描述：
 * 作者：slicol
 */
-using System;
-using System.Collections.Generic;
 
 using System.Net;
-using System.Text;
 
 namespace Framework.Network.RPC
 {
     public delegate void RPCMethod(IPEndPoint target);
-    public delegate void RPCMethod<T0>(T0 arg0,IPEndPoint target);
-    public delegate void RPCMethod<T0, T1>(T0 arg0, T1 arg1, IPEndPoint target);
-    public delegate void RPCMethod<T0, T1, T2>(T0 arg0, T1 arg1, T2 arg2, IPEndPoint target);
-    public delegate void RPCMethod<T0, T1, T2, T3>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, IPEndPoint target);
-    public delegate void RPCMethod<T0, T1, T2, T3, T4>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, IPEndPoint target);
-    public delegate void RPCMethod<T0, T1, T2, T3, T4, T5>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, IPEndPoint target);
-    public delegate void RPCMethod<T0, T1, T2, T3, T4, T5, T6>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, IPEndPoint target);
-    public delegate void RPCMethod<T0, T1, T2, T3, T4, T5, T6, T7>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, IPEndPoint target);
-    public delegate void RPCMethod<T0, T1, T2, T3, T4, T5, T6, T7, T8>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, IPEndPoint target);
-    public delegate void RPCMethod<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, IPEndPoint target);
+    public delegate void RPCMethod<T0>(IPEndPoint target, T0 arg0);
+    public delegate void RPCMethod<T0, T1>(IPEndPoint target, T0 arg0, T1 arg1);
+    public delegate void RPCMethod<T0, T1, T2>(IPEndPoint target, T0 arg0, T1 arg1, T2 arg2);
+    public delegate void RPCMethod<T0, T1, T2, T3>(IPEndPoint target, T0 arg0, T1 arg1, T2 arg2, T3 arg3);
+    public delegate void RPCMethod<T0, T1, T2, T3, T4>(IPEndPoint target, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4);
+    public delegate void RPCMethod<T0, T1, T2, T3, T4, T5>(IPEndPoint target, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5);
+    public delegate void RPCMethod<T0, T1, T2, T3, T4, T5, T6>(IPEndPoint target, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6);
+    public delegate void RPCMethod<T0, T1, T2, T3, T4, T5, T6, T7>(IPEndPoint target, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7);
+    public delegate void RPCMethod<T0, T1, T2, T3, T4, T5, T6, T7, T8>(IPEndPoint target, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8);
+    public delegate void RPCMethod<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(IPEndPoint target, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9);
 
     public abstract class RPCMethodHelperBase
     {
-        public abstract void Invoke(object[] args, IPEndPoint target);
+        public abstract void Invoke(IPEndPoint target, object[] args);
     }
 
     public class RPCMethodHelper : RPCMethodHelperBase
     {
         public RPCMethod method;
 
-        public override void Invoke(object[] args, IPEndPoint target)
+        public override void Invoke(IPEndPoint target, object[] args)
         {
             method(target);
         }
@@ -63,9 +60,9 @@ namespace Framework.Network.RPC
     {
         public RPCMethod<T0> method;
 
-        public override void Invoke(object[] args, IPEndPoint target)
+        public override void Invoke(IPEndPoint target, object[] args)
         {
-            method((T0)args[0], target);
+            method(target, (T0)args[0]);
         }
     }
 
@@ -73,9 +70,9 @@ namespace Framework.Network.RPC
     {
         public RPCMethod<T0, T1> method;
 
-        public override void Invoke(object[] args, IPEndPoint target)
+        public override void Invoke(IPEndPoint target, object[] args)
         {
-            method.Invoke((T0)args[0], (T1)args[1], target);
+            method.Invoke(target, (T0)args[0], (T1)args[1]);
             
         }
     }
@@ -84,9 +81,9 @@ namespace Framework.Network.RPC
     {
         public RPCMethod<T0, T1, T2> method;
 
-        public override void Invoke(object[] args, IPEndPoint target)
+        public override void Invoke(IPEndPoint target, object[] args)
         {
-            method.Invoke((T0)args[0], (T1)args[1], (T2)args[2], target);
+            method.Invoke(target, (T0)args[0], (T1)args[1], (T2)args[2]);
         }
     }
 
@@ -94,9 +91,9 @@ namespace Framework.Network.RPC
     {
         public RPCMethod<T0, T1, T2, T3> method;
 
-        public override void Invoke(object[] args, IPEndPoint target)
+        public override void Invoke(IPEndPoint target, object[] args)
         {
-            method.Invoke((T0)args[0], (T1)args[1], (T2)args[2], (T3)args[3], target);
+            method.Invoke(target, (T0)args[0], (T1)args[1], (T2)args[2], (T3)args[3]);
         }
     }
 
@@ -104,9 +101,9 @@ namespace Framework.Network.RPC
     {
         public RPCMethod<T0, T1, T2, T3, T4> method;
 
-        public override void Invoke(object[] args, IPEndPoint target)
+        public override void Invoke(IPEndPoint target, object[] args)
         {
-            method.Invoke((T0)args[0], (T1)args[1], (T2)args[2], (T3)args[3], (T4)args[4], target);
+            method.Invoke(target, (T0)args[0], (T1)args[1], (T2)args[2], (T3)args[3], (T4)args[4]);
         }
     }
 
@@ -114,9 +111,9 @@ namespace Framework.Network.RPC
     {
         public RPCMethod<T0, T1, T2, T3, T4, T5> method;
 
-        public override void Invoke(object[] args, IPEndPoint target)
+        public override void Invoke(IPEndPoint target, object[] args)
         {
-            method.Invoke((T0)args[0], (T1)args[1], (T2)args[2], (T3)args[3], (T4)args[4], (T5)args[5], target);
+            method.Invoke(target, (T0)args[0], (T1)args[1], (T2)args[2], (T3)args[3], (T4)args[4], (T5)args[5]);
         }
     }
 
@@ -124,9 +121,9 @@ namespace Framework.Network.RPC
     {
         public RPCMethod<T0, T1, T2, T3, T4, T5, T6> method;
 
-        public override void Invoke(object[] args, IPEndPoint target)
+        public override void Invoke(IPEndPoint target, object[] args)
         {
-            method.Invoke((T0)args[0], (T1)args[1], (T2)args[2], (T3)args[3], (T4)args[4], (T5)args[5], (T6)args[6], target);
+            method.Invoke(target, (T0)args[0], (T1)args[1], (T2)args[2], (T3)args[3], (T4)args[4], (T5)args[5], (T6)args[6]);
         }
     }
 
@@ -134,18 +131,18 @@ namespace Framework.Network.RPC
     {
         public RPCMethod<T0, T1, T2, T3, T4, T5, T6, T7> method;
 
-        public override void Invoke(object[] args, IPEndPoint target)
+        public override void Invoke(IPEndPoint target, object[] args)
         {
-            method.Invoke((T0)args[0], (T1)args[1], (T2)args[2], (T3)args[3], (T4)args[4], (T5)args[5], (T6)args[6], (T7)args[7], target);
+            method.Invoke(target, (T0)args[0], (T1)args[1], (T2)args[2], (T3)args[3], (T4)args[4], (T5)args[5], (T6)args[6], (T7)args[7]);
         }
     }
     public class RPCMethodHelper<T0, T1, T2, T3, T4, T5, T6, T7, T8> : RPCMethodHelperBase
     {
         public RPCMethod<T0, T1, T2, T3, T4, T5, T6, T7, T8> method;
 
-        public override void Invoke(object[] args, IPEndPoint target)
+        public override void Invoke(IPEndPoint target, object[] args)
         {
-            method.Invoke((T0)args[0], (T1)args[1], (T2)args[2], (T3)args[3], (T4)args[4], (T5)args[5], (T6)args[6], (T7)args[7], (T8)args[8], target);
+            method.Invoke(target, (T0)args[0], (T1)args[1], (T2)args[2], (T3)args[3], (T4)args[4], (T5)args[5], (T6)args[6], (T7)args[7], (T8)args[8]);
         }
     }
 
@@ -153,9 +150,9 @@ namespace Framework.Network.RPC
     {
         public RPCMethod<T0, T1, T2, T3, T4, T5, T6, T7, T8,T9> method;
 
-        public override void Invoke(object[] args, IPEndPoint target)
+        public override void Invoke(IPEndPoint target, object[] args)
         {
-            method.Invoke((T0)args[0], (T1)args[1], (T2)args[2], (T3)args[3], (T4)args[4], (T5)args[5], (T6)args[6], (T7)args[7], (T8)args[8], (T9)args[9], target);
+            method.Invoke(target, (T0)args[0], (T1)args[1], (T2)args[2], (T3)args[3], (T4)args[4], (T5)args[5], (T6)args[6], (T7)args[7], (T8)args[8], (T9)args[9]);
         }
     }
 }

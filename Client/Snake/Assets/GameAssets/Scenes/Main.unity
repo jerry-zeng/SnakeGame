@@ -242,6 +242,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enableLog: 1
   enableLogSave: 1
+  useUnityLogPath: 0
 --- !u!4 &1187307122
 Transform:
   m_ObjectHideFlags: 0

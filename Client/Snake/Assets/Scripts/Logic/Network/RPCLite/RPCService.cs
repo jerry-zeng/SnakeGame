@@ -17,13 +17,15 @@ namespace Framework.Network.RPC
         private Dictionary<string, RPCMethodHelperBase> m_RPCBindMap;
 
         // properties
-        public IPEndPoint SelfEndPoint { get { return m_Socket.SelfEndPoint; } }
-        public int SelfPort { get { return m_Socket.SelfPort; } }
-        public string SelfIP { get { return m_Socket.SelfIP; } }
+        public bool IsRunning { get{ return m_IsRunning;} }
+
+        public IPEndPoint SelfEndPoint { get { return m_Socket != null? m_Socket.SelfEndPoint:null; } }
+        public int SelfPort { get { return m_Socket != null? m_Socket.SelfPort:0; } }
+        public string SelfIP { get { return m_Socket != null? m_Socket.SelfIP:""; } }
 
         //=====================================================================
         #region 构造和析构
-        public RPCService(int port)
+        public RPCService(int port = 0)
         {
             //创建Socket
             m_Socket = new KCPSocket(port, 1);
@@ -91,8 +93,9 @@ namespace Framework.Network.RPC
                 Debuger.Log(LOG_TAG, "HandleRPCMessage() DefaultRPC:{0}, Target:{1}", msg.name, target);
                 try
                 {
-                    List<object> args = new List<object>(msg.args);
-                    args.Add(target);
+                    List<object> args = new List<object>();
+                    args.Add(target);  //放第一个参数
+                    args.AddRange(msg.args);
                     
                     // 调用自己的方法
                     mi.Invoke(this, BindingFlags.NonPublic, null, args.ToArray(), null);
@@ -116,7 +119,7 @@ namespace Framework.Network.RPC
                 try
                 {
                     RPCMethodHelperBase rpc = m_RPCBindMap[msg.name];
-                    rpc.Invoke(msg.args, target);
+                    rpc.Invoke(target, msg.args);
                 }
                 catch (Exception e)
                 {
@@ -125,7 +128,7 @@ namespace Framework.Network.RPC
             }
             else
             {
-                Debuger.LogError(LOG_TAG, "OnBindingRPCInvoke() 收到未知的RPC:{0}", msg.name);
+                Debuger.LogWarning(LOG_TAG, "OnBindingRPCInvoke() 收到未知的RPC: {0}", msg.name);
             }
         }
         #endregion

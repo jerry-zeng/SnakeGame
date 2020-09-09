@@ -14,21 +14,13 @@ namespace Framework
         public static string LogFileDir = "";
         public static string LogFileName = "";
         public static string Prefix = "> ";
-        public static StreamWriter LogFileWriter = null;
+        private static StreamWriter LogFileWriter = null;
         public static bool UseUnityEngine = true;
 
 
         public static void Init()
         {
-            if (UseUnityEngine)
-            {
-                LogFileDir = UnityEngine.Application.persistentDataPath + "/DebugerLog/";
-            }
-            else
-            {
-                string path = System.AppDomain.CurrentDomain.BaseDirectory;
-                LogFileDir = path + "/DebugerLog/";
-            }
+            CheckLogFileDir();
         }
         
         private static void Internal_Log(string msg, object context = null)
@@ -189,12 +181,14 @@ namespace Framework
                 {
                     if (UseUnityEngine)
                     {
-                        LogFileDir = UnityEngine.Application.persistentDataPath + "/DebugerLog/";
+                        if (UnityEngine.Application.isMobilePlatform)
+                            LogFileDir = UnityEngine.Application.persistentDataPath + "/DebugerLog/";
+                        else
+                            LogFileDir = UnityEngine.Application.dataPath + "/../DebugerLog/";
                     }
                     else
                     {
-                        string path = System.AppDomain.CurrentDomain.BaseDirectory;
-                        LogFileDir = path + "/DebugerLog/";
+                        LogFileDir = System.AppDomain.CurrentDomain.BaseDirectory + "/DebugerLog/";
                     }
                 }
                 catch (Exception e)

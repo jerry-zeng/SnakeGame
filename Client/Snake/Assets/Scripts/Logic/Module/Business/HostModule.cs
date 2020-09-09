@@ -3,11 +3,15 @@ using System.Collections.Generic;
 using Framework;
 using Framework.UI;
 using Framework.Module;
+using Framework.Network.FSP;
 
 public class HostModule : BusinessModule 
 {
-    public string ip {get; private set;}
-    public int port {get; private set;}
+    // TEST: 先在这边开房间，正式的要放到帧同步服务器
+    FSPRoom fspRoom;
+
+    public string ip { get{ return HasHost()? fspRoom.SelfIP : "";} }
+    public int port { get{ return HasHost()? fspRoom.SelfPort : 0;} }
 
 
     public override void Open(object arg)
@@ -29,19 +33,22 @@ public class HostModule : BusinessModule
 
     public bool HasHost()
     {
-        return !string.IsNullOrEmpty(ip) && port > 0;
+        return fspRoom != null && fspRoom.IsRunning;
     }
 
     public void StartHost()
     {
         if (!HasHost())
         {
-            ip = "127.0.0.1";
-            port = 1001;
+            fspRoom = new FSPRoom();
+            fspRoom.Start();
+
             Debuger.Log("HostModule", string.Format("start host: {0}-{1}", ip, port));
 
             EventManager.Instance.SendEvent<string, int>("OnStartHost", ip, port);
             EventManager.Instance.SendEvent("OnHostChanged");
+
+            Scheduler.AddUpdateListener(OnUpdate);
         }
         else
         {
@@ -53,12 +60,22 @@ public class HostModule : BusinessModule
     {
         if (HasHost())
         {
-            ip = "";
-            port = 0;
+            Scheduler.RemoveUpdateListener(OnUpdate);
+
+            fspRoom.Destroy();
+            fspRoom = null;
+
             Debuger.Log("HostModule", "The host is stoped");
 
             EventManager.Instance.SendEvent("OnStopHost");
             EventManager.Instance.SendEvent("OnHostChanged");
         }
     }
+
+    void OnUpdate()
+    {
+        if (fspRoom != null)
+            fspRoom.RPCTick();
+    }
+
 }

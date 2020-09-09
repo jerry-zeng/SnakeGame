@@ -7,7 +7,7 @@ using Framework.Module;
 
 namespace Framework.UI
 {
-    public class UIManager : ServiceModule<UIManager>
+    public partial class UIManager : ServiceModule<UIManager>
     {
         /**
          * The ui stack is like:
@@ -332,7 +332,23 @@ namespace Framework.UI
         /// </summary>
         public void PopUI()
         {
-            HideUI( GetTopUIName() );
+            string topUIName = GetTopUIName();
+
+            if (topUIName == "UISplashPanel" 
+                || topUIName == "UIUpdatePanel"
+            ){
+                // skip
+            }
+            else if (topUIName == "UILoginPanel" 
+                || topUIName == "UILobbyPanel"
+                || topUIName == "UIBattlePanel"
+            ){
+                // quit game?
+            }
+            else
+            {
+                HideUI( GetTopUIName() );
+            }
         }
 
 

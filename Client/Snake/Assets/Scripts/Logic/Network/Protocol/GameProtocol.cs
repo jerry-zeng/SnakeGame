@@ -238,10 +238,10 @@ namespace GameProtocol
       get { return _name; }
       set { _name = value; }
     }
-    private int _userId = default(int);
+    private uint _userId = default(uint);
     [global::ProtoBuf.ProtoMember(3, IsRequired = false, Name=@"userId", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
-    [global::System.ComponentModel.DefaultValue(default(int))]
-    public int userId
+    [global::System.ComponentModel.DefaultValue(default(uint))]
+    public uint userId
     {
       get { return _userId; }
       set { _userId = value; }

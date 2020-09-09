@@ -202,7 +202,12 @@ namespace Framework.Network
 
 		public static string SelfIP
 		{
-			get{ return m_selfIpAddress; }
+			get
+            { 
+                if (string.IsNullOrEmpty(m_selfIpAddress))
+                    CheckSelfIPAddress();
+                return m_selfIpAddress; 
+            }
 		}
 
         public static string GetIpAddress()

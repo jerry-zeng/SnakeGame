@@ -70,6 +70,8 @@ public class UIRoomLobbyPanel : UIBasePanel
     {
         base.Show(args);
 
+        EventManager.Instance.RegisterEvent("OnJoinRoom", UpdateRoom);
+        EventManager.Instance.RegisterEvent("OnExitRoom", UpdateRoom);
         EventManager.Instance.RegisterEvent("OnRoomUpdate", UpdateRoom);
 
         pvpModule = ModuleManager.Instance.EnsureModule<PVPModule>();
@@ -79,6 +81,8 @@ public class UIRoomLobbyPanel : UIBasePanel
 
     public override void Hide()
     {
+        EventManager.Instance.UnregisterEvent("OnJoinRoom", UpdateRoom);
+        EventManager.Instance.UnregisterEvent("OnExitRoom", UpdateRoom);
         EventManager.Instance.UnregisterEvent("OnRoomUpdate", UpdateRoom);
 
         pvpModule = null;

@@ -19,5 +19,11 @@ namespace GamePlay
         [ProtoMember(6)] public int score;
 
         [ProtoMember(7)] public SnakerData snakerData;
+
+        public override string ToString()
+        {
+            return string.Format("[PlayerData] userId={0}, userName={1}, playerID={2}, teamID={3}, aiID={4}, score={5}",
+                                userID, userName, playerID, teamID, aiID, score);
+        }
     }
 }
