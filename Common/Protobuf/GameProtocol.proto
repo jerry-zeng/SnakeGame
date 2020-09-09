@@ -111,7 +111,7 @@ message FSPPlayerData
 {
     required uint32 id = 1;
     optional string name = 2;
-    optional int32 userId = 3;
+    optional uint32 userId = 3;
     optional int32 sid = 4;
     optional bool isReady = 5; //bool
     optional int32 teamId = 6;
