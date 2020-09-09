@@ -34,21 +34,9 @@ namespace GamePlay
         private BattleEngine battleEngine;
         private int _focusPlayerId;
 
-        float _nextTickTime = 0f;
-        int _frame = 0;
-        float _dt = 0f;
-
-        public int CurrentFrame
-        {
-            get{ return _frame; }
-        }
-
 
         void Start()
         {
-            _nextTickTime = 0f;
-            _frame = 0;
-
             battleEngine = BattleEngine.Instance;
             _gameCamera = GameCamera.current;
 
@@ -130,7 +118,7 @@ namespace GamePlay
             }
         }
 
-
+        float _dt;
         void Update()
         {
             if( battleEngine == null || !battleEngine.isRunning )
@@ -148,22 +136,6 @@ namespace GamePlay
 
             // 2. tick
             _dt = Time.deltaTime;
-
-            _nextTickTime -= _dt;
-            if( _nextTickTime <= 0f )
-            {
-                _frame++;
-
-                while(_nextTickTime <= 0f){
-                    _nextTickTime += BattleEngine.TICK_INTERVAL;
-                }
-            }
-
-            if (_frame > battleEngine.Context.CurrentFrame)
-            {
-                return;
-            }
-
 
             // 3. update actors
             if( _mapView != null )
