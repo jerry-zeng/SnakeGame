@@ -42,14 +42,13 @@ namespace GamePlay
 
             RegisterPlayer();
 
+            BattleEngine.Instance.EnterBattle(gameParam, this);
+            m_context = BattleEngine.Instance.Context;
+
             GameInput.onVKey = OnVKey;
             GameInput.DisableInput();
 
             Scheduler.AddFixedUpdateListener(FixedUpdate);
-
-            BattleEngine.Instance.EnterBattle(gameParam, this);
-
-            m_context = BattleEngine.Instance.Context;
         }
 
         public void Stop()
@@ -83,6 +82,11 @@ namespace GamePlay
             BattleEngine.Instance.RegPlayerData(player);
         }
 
+        void OnVKey(int vkey, float arg)
+        {
+            BattleEngine.Instance.InputVKey(vkey, arg, _mainPlayerId);
+        }
+
         public void OnPlayerReady()
         {
             BattleEngine.Instance.InputVKey((int)GameVKey.CreatePlayer, 0, _mainPlayerId);
@@ -96,11 +100,6 @@ namespace GamePlay
 		{
 			OnPlayerReady();
 		}
-
-        void OnVKey(int vkey, float arg)
-        {
-            BattleEngine.Instance.InputVKey(vkey, arg, _mainPlayerId);
-        }
 
         /// <summary>
         /// 驱动游戏逻辑循环

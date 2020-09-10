@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using GameProtocol;
 using Framework;
 using GameProtocol;
@@ -11,10 +12,10 @@ namespace GamePlay
 
         private GameContext m_context;
 
-        private bool m_pause = false;
+
         public bool isPaused 
         {
-            get { return m_pause; }
+            get { return false; }
         }
 
         private bool _isStoped = false;
@@ -32,38 +33,75 @@ namespace GamePlay
 
         public void Start(object param)
         {
+            _isStoped = false;
+
             PVPStartParam startParam = param as PVPStartParam;
 
-            // RegisterPlayer();
+            _gameMode = startParam.gameParam.mode;
 
-            // GameInput.onVKey = OnVKey;
-            // GameInput.DisableInput();
+            // 注册玩家
+            uint mainUserId = UserManager.Instance.UserData.id;
 
-            // Scheduler.AddFixedUpdateListener(FixedUpdate);
+            var players = startParam.players;
+            for(int i = 0; i < players.Count; i++)
+            {
+                if (players[i].userID == mainUserId)
+                {
+                    _mainPlayerId = players[i].playerID;
+                }
 
-            // BattleEngine.Instance.EnterBattle(startParam);
+                //注册玩家数据，为在帧同步过程中创建玩家提供数据
+                //因为帧同步协议非常精简，不包含具体的玩家数据
+				BattleEngine.Instance.RegPlayerData(players[i]);
+            }
 
+            // 创建游戏
+            BattleEngine.Instance.EnterBattle(startParam.gameParam, this);
+            m_context = BattleEngine.Instance.Context;
+
+            // 帧同步
+            StartFSP();
+
+            // 接收输入
+            GameInput.onVKey = OnVKey;
+            GameInput.DisableInput();
+
+            Scheduler.AddFixedUpdateListener(FixedUpdate);
         }
 
         public void Stop()
         {
-            // GameInput.DisableInput();
+            _isStoped = true;
+            GameInput.DisableInput();
 
-            // m_context = null;
+            m_context = null;
 
-            // Scheduler.RemoveFixedUpdateListener(FixedUpdate);
+            Scheduler.RemoveFixedUpdateListener(FixedUpdate);
 
-            // BattleEngine.Instance.EndBattle();
+            BattleEngine.Instance.ExitBattle();
+
+            StopFSP();
         }
 
+        //----------------------------------帧同步 & 输入------------------------------------
+        void StartFSP()
+        {
+
+        }
+
+        void StopFSP()
+        {
+
+        }
+
+        void OnVKey(int vkey, float arg)
+        {
+            // BattleEngine.Instance.InputVKey(vkey, arg, _mainPlayerId);
+        }
 
         public void OnPlayerReady()
         {
-            // BattleEngine.Instance.InputVKey((int)GameVKey.CreatePlayer, 0, _mainPlayerId);
-
-            // GameInput.EnableInput();
-
-            // BattleView.Instance.FocusOnPlayer(_mainPlayerId);
+            
         }
 
         public void RebornPlayer()
@@ -71,28 +109,37 @@ namespace GamePlay
 			this.LogError("PVPGame can't reborn");
 		}
 
+
+        /// <summary>
+        /// 驱动游戏逻辑循环
+        /// </summary>
+		void FixedUpdate()
+		{
+			if (m_context.isPaused)
+			{
+				return;
+			}
+
+			m_frameIndex++;
+
+			BattleEngine.Instance.EnterFrame(m_frameIndex);
+
+			// CheckTimeEnd();
+		}
+
+        //------------------------------------基类接口----------------------------------
         public void Pause()
 		{
             // can't pause
 		}
-
-        /// <summary>
-        /// 恢复游戏
-        /// </summary>
 		public void Resume()
 		{
 			// can't pause
 		}
-
-        /// <summary>
-        /// 结束游戏
-        /// </summary>
 		public void Terminate()
 		{
-            // BattleEngine.Instance.EndBattle();
-			// EventManager.Instance.SendEvent(EventDef.OnGameEnd);
+            // can't handle by manual
 		}
-
         public bool EnablePause()
         {
             return false;
@@ -102,9 +149,10 @@ namespace GamePlay
             return false;
         }
 
+        //--------------------------------------其它事件--------------------------------
         public void OnPlayerDie(int playerId)
 		{
-            Debuger.Log("PVEGame", "OnPlayerDie {0}, _mainPlayerId = {1}", playerId, _mainPlayerId);
+            Debuger.Log("PVPGame", "OnPlayerDie {0}, _mainPlayerId = {1}", playerId, _mainPlayerId);
 			if (_mainPlayerId == playerId)
 			{
 				GameInput.DisableInput();
@@ -113,5 +161,8 @@ namespace GamePlay
                 EventManager.Instance.SendEvent("OpenGodOfView");
 			}
 		}
+
+
+        //----------------------------------------------------------------------
     }
 }
