@@ -67,7 +67,7 @@ namespace GamePlay
             return _curPlayerID++;
         }
 
-        public void EnterBattle(GameParam param)
+        public void EnterBattle(GameParam param, IGame game)
         {
             if( _isRunning ){
                 this.LogWarning("The game is running, don't run it!");
@@ -78,7 +78,7 @@ namespace GamePlay
             _map = new GameMap();
             _map.Load(param.mapID);
 
-            _context = new GameContext(param);
+            _context = new GameContext(param, game);
 
             _foodList.Clear();
             _snakerList.Clear();
@@ -93,7 +93,7 @@ namespace GamePlay
         }
 
 
-        public void EndBattle()
+        public void ExitBattle()
         {
             if( !_isRunning ){
                 this.LogWarning("The game wasn't running, don't stop it!");
@@ -101,8 +101,18 @@ namespace GamePlay
             }
             _isRunning = false;
 
-            _map.Unload();
-            _map = null;
+            ClearBattle();
+
+            _context.Clear();
+            _context = null;
+        }
+        public void ClearBattle()
+        {
+            if (_map != null)
+            {
+                _map.Unload();
+                _map = null;
+            }
 
             foreach(Food food in _foodList)
             {
@@ -246,6 +256,8 @@ namespace GamePlay
         #region Snaker
         public void OnSnakerDead(Snaker snaker, object killer)
         {
+            Context.Game.OnPlayerDie(snaker.PlayerID);
+
             EventManager.Instance.SendEvent<Snaker,object>("OnSnakerDead", snaker,killer);
         }
 

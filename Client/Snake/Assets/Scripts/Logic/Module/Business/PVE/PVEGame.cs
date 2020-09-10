@@ -7,20 +7,39 @@ using Framework;
 
 namespace GamePlay
 {
-    public class PVEGame
+    public class PVEGame : IGame
     {
         private int m_frameIndex = 0;
         private int _mainPlayerId = 0;
+        
         private GameContext m_context;
 
+        private bool m_pause = false;
         public bool isPaused 
         {
-            get { return m_context.isPaused; }
+            get { return m_pause; }
+        }
+
+        private bool _isStoped = false;
+        public bool isStoped
+        {
+            get { return _isStoped; }
+        }
+
+        private GameMode _gameMode = GameMode.TimelimitPVE;
+        public GameMode gameMode
+        {
+            get { return _gameMode; }
         }
 
 
-        public void Start(GameParam param)
+        public void Start(object param)
         {
+            _isStoped = false;
+
+            GameParam gameParam = param as GameParam;
+            _gameMode = gameParam.mode;
+
             RegisterPlayer();
 
             GameInput.onVKey = OnVKey;
@@ -28,20 +47,22 @@ namespace GamePlay
 
             Scheduler.AddFixedUpdateListener(FixedUpdate);
 
-            BattleEngine.Instance.EnterBattle(param);
+            BattleEngine.Instance.EnterBattle(gameParam, this);
 
             m_context = BattleEngine.Instance.Context;
         }
 
         public void Stop()
         {
+            _isStoped = true;
+
             GameInput.DisableInput();
 
             m_context = null;
 
             Scheduler.RemoveFixedUpdateListener(FixedUpdate);
 
-            BattleEngine.Instance.EndBattle();
+            BattleEngine.Instance.ExitBattle();
         }
 
         void RegisterPlayer()
@@ -84,19 +105,18 @@ namespace GamePlay
         /// <summary>
         /// 驱动游戏逻辑循环
         /// </summary>
-		private void FixedUpdate()
+		void FixedUpdate()
 		{
 			if (m_context.isPaused)
 			{
 				return;
 			}
 
-
 			m_frameIndex++;
 
 			BattleEngine.Instance.EnterFrame(m_frameIndex);
 
-			CheckTimeEnd ();
+			CheckTimeEnd();
 		}
 
         /// <summary>
@@ -104,7 +124,7 @@ namespace GamePlay
         /// </summary>
 		public void Pause()
 		{
-            m_context.Pause();
+            m_pause = true;
 
             GameInput.DisableInput();
 		}
@@ -114,7 +134,7 @@ namespace GamePlay
         /// </summary>
 		public void Resume()
 		{
-			m_context.Resume();
+			m_pause = false;
 
             GameInput.EnableInput();
 		}
@@ -127,7 +147,7 @@ namespace GamePlay
 		{
 			Pause();
 
-            BattleEngine.Instance.EndBattle();
+            BattleEngine.Instance.ClearBattle();
 			EventManager.Instance.SendEvent(EventDef.OnGameEnd);
 		}
 
@@ -136,49 +156,24 @@ namespace GamePlay
         /// </summary>
 		private void CheckTimeEnd()
 		{
-			if (IsTimelimited)
+			if (m_context.IsTimelimited)
 			{
-				if (GetRemainTime() <= 0)
+				if (m_context.GetRemainTime() <= 0)
 				{
 					Terminate();
 				}
 			}
 		}
 
-
-        /// <summary>
-        /// 是否为限时模式
-        /// </summary>
-		public bool IsTimelimited
-		{
-			get
-			{
-				return m_context.Param.mode == GameMode.TimelimitPVE;
-			}
-		}
-
-        /// <summary>
-        /// 如果是限时模式，还剩下多少时间
-        /// </summary>
-        /// <returns></returns>
-		public int GetRemainTime()
-		{
-			if (m_context.Param.mode == GameMode.TimelimitPVE)
-			{
-				return (int)(m_context.Param.limitTime - m_context.CurrentFrame * BattleEngine.TICK_INTERVAL);
-			}
-			return 0;
-		}
-
-        /// <summary>
-        /// 游戏经过了多少时间
-        /// </summary>
-        /// <returns></returns>
-		public int GetElapsedTime()
-		{
-			return (int)(m_context.CurrentFrame * BattleEngine.TICK_INTERVAL);
-		}
-
+        public bool EnablePause()
+        {
+            return !m_pause && !_isStoped;
+        }
+        public bool EnableRevive()
+        {
+            Snaker snaker = BattleEngine.Instance.GetSnakerByID(_mainPlayerId);
+            return snaker != null && snaker.IsDead;
+        }
 
         public void OnPlayerDie(int playerId)
 		{

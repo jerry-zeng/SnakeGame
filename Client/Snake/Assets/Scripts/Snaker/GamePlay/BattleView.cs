@@ -82,6 +82,18 @@ namespace GamePlay
                 _gameCamera.Reset();
         }
 
+        public void FocusOnAnotherPlayer()
+        {
+            foreach( var kvs in battleEngine.SnakerList )
+            {
+                if (!kvs.Value.IsDead)
+                {
+                    FocusOnPlayer(kvs.Value.PlayerID);
+                    return;
+                }
+            }
+        }
+
         /*
          * the map is like:
          *   +--------------+

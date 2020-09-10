@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.Events;
 using Framework;
 using Framework.UI;
-using Framework.Module;
 using GamePlay;
 using EpochProtocol;
 
@@ -15,8 +13,9 @@ public class UIBattlePanel : UIBasePanel
     public Text lab_Time;
     public Button btn_Pause;
     public Button btn_Ready;
+    public Text lab_Tips;
 
-    PVEModule pveModule;
+    GameContext context;
     uint timerId = 0;
 
     public override void Setup()
@@ -40,20 +39,24 @@ public class UIBattlePanel : UIBasePanel
     {
         //this.Log("OnClickPause()");
 
-        PVEGame pveGame = pveModule.currentGame;
-        if (pveGame.isPaused)
+        if (!context.Game.EnablePause())
+        {
+            return;
+        }
+
+        if (context.Game.isPaused)
             return;
 
-        pveGame.Pause();
+        context.Game.Pause();
 
         MessageBox.Show("Resume or Quit the game?",
                         "Quit", ()=>{
                                     MessageBox.Hide();
-                                    pveGame.Terminate();
+                                    context.Game.Terminate();
                                 },
                         "Resume", ()=>{
                                     MessageBox.Hide();
-                                    pveGame.Resume();
+                                    context.Game.Resume();
                                 }
                        );
     }
@@ -63,8 +66,7 @@ public class UIBattlePanel : UIBasePanel
         //this.Log("OnClickReady()");
         btn_Ready.gameObject.SetActive(false);
 
-        PVEGame pveGame = pveModule.currentGame;
-        pveGame.OnPlayerReady();
+        context.Game.OnPlayerReady();
     }
 
 
@@ -74,8 +76,9 @@ public class UIBattlePanel : UIBasePanel
 
         EventManager.Instance.RegisterEvent<Snaker,object>("OnSnakerDead", OnSnakerDead);
         EventManager.Instance.RegisterEvent(EventDef.OnGameEnd, OnGameEnd);
+        EventManager.Instance.RegisterEvent("OpenGodOfView", OpenGodOfView);
 
-        pveModule = ModuleManager.Instance.EnsureModule<PVEModule>();
+        context = BattleEngine.Instance.Context;
 
         UserData data = UserManager.Instance.UserData;
         lab_UserInfo.text = string.Format("{0}(Lv.{1})", data.userName, 0);
@@ -86,10 +89,11 @@ public class UIBattlePanel : UIBasePanel
 
     public override void Hide()
     {
-        pveModule = null;
+        context = null;
 
         EventManager.Instance.UnregisterEvent<Snaker,object>("OnSnakerDead", OnSnakerDead);
         EventManager.Instance.UnregisterEvent(EventDef.OnGameEnd, OnGameEnd);
+        EventManager.Instance.UnregisterEvent("OpenGodOfView", OpenGodOfView);
 
         if (timerId > 0)
         {
@@ -100,8 +104,16 @@ public class UIBattlePanel : UIBasePanel
         base.Hide();
     }
 
+
+    void OpenGodOfView()
+    {
+        lab_Tips.gameObject.SetActive(true);
+        BattleView.Instance.FocusOnAnotherPlayer();
+    }
+
     void OnGameEnd()
     {
+        lab_Tips.gameObject.SetActive(false);
         MessageBox.Show("Show scores...",
                     "OK", ()=>{
                             MessageBox.Hide();
@@ -112,20 +124,17 @@ public class UIBattlePanel : UIBasePanel
 
     void OnSnakerDead(Snaker snaker, object killer)
     {
-        PVEGame pveGame = pveModule.currentGame;
-        pveGame.OnPlayerDie(snaker.PlayerID);
-
-        if (pveGame.isPaused)
+        if (context.Game.EnableRevive())
         {
             MessageBox.Show("Revive or Quit this game?",
                         "Quit", ()=>{
                             MessageBox.Hide();
-                            pveGame.Terminate();
+                            context.Game.Terminate();
                         },
                         "Revive", ()=>{
                             MessageBox.Hide();
-                            pveGame.Resume();
-                            pveGame.RebornPlayer();
+                            context.Game.Resume();
+                            context.Game.RebornPlayer();
                         });
         }
     }
@@ -133,21 +142,20 @@ public class UIBattlePanel : UIBasePanel
 
     void UpdateTime()
     {
-        if (pveModule == null)
+        if (context == null)
         {
             lab_Time.text = "";
             return;
         }
 
-        PVEGame pveGame = pveModule.currentGame;
         int time;
-        if (pveGame.IsTimelimited) 
+        if (context.IsTimelimited) 
         {
-            time = pveGame.GetRemainTime(); //second
+            time = context.GetRemainTime(); //second
         } 
         else 
         {
-            time = pveGame.GetElapsedTime();
+            time = context.GetElapsedTime();
         }
         lab_Time.text = TimeUtils.GetTimeString("%hh:%mm:%ss", time);
     }
