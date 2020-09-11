@@ -85,7 +85,7 @@ namespace Framework.Network.FSP.Server
                 m_data.players.Add(player);
 
                 player.id = (uint)m_data.players.Count;
-                player.sid = (int)player.id;
+                player.sid = player.id;
             }
             
             player.userId = userId;
@@ -244,7 +244,7 @@ namespace Framework.Network.FSP.Server
                 param.fspParam.sid = player.sid;
 
                 //将玩家加入到FSPServer中
-                // FSPServer.Instance.Game.AddPlayer(player.id, player.sid);
+                FSPServer.Instance.Game.AddPlayer(player.id, player.sid);
 
                 byte[] buff = PBSerializer.Serialize(param);
                 RPC(address, RoomRPC.RPC_NotifyGameStart, buff);

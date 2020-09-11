@@ -30,9 +30,9 @@ namespace GameProtocol
       get { return _port; }
       set { _port = value; }
     }
-    private int _sid;
+    private uint _sid;
     [global::ProtoBuf.ProtoMember(3, IsRequired = true, Name=@"sid", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
-    public int sid
+    public uint sid
     {
       get { return _sid; }
       set { _sid = value; }
@@ -141,12 +141,12 @@ namespace GameProtocol
       get { return _args; }
     }
   
-    private int _playerIdOrFrameId;
-    [global::ProtoBuf.ProtoMember(3, IsRequired = true, Name=@"playerIdOrFrameId", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
-    public int playerIdOrFrameId
+    private uint _playerIdOrClientFrameId;
+    [global::ProtoBuf.ProtoMember(3, IsRequired = true, Name=@"playerIdOrClientFrameId", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    public uint playerIdOrClientFrameId
     {
-      get { return _playerIdOrFrameId; }
-      set { _playerIdOrFrameId = value; }
+      get { return _playerIdOrClientFrameId; }
+      set { _playerIdOrClientFrameId = value; }
     }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
@@ -246,10 +246,10 @@ namespace GameProtocol
       get { return _userId; }
       set { _userId = value; }
     }
-    private int _sid = default(int);
+    private uint _sid = default(uint);
     [global::ProtoBuf.ProtoMember(4, IsRequired = false, Name=@"sid", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
-    [global::System.ComponentModel.DefaultValue(default(int))]
-    public int sid
+    [global::System.ComponentModel.DefaultValue(default(uint))]
+    public uint sid
     {
       get { return _sid; }
       set { _sid = value; }
@@ -262,10 +262,10 @@ namespace GameProtocol
       get { return _isReady; }
       set { _isReady = value; }
     }
-    private int _teamId = default(int);
+    private uint _teamId = default(uint);
     [global::ProtoBuf.ProtoMember(6, IsRequired = false, Name=@"teamId", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
-    [global::System.ComponentModel.DefaultValue(default(int))]
-    public int teamId
+    [global::System.ComponentModel.DefaultValue(default(uint))]
+    public uint teamId
     {
       get { return _teamId; }
       set { _teamId = value; }
