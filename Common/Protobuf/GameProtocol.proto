@@ -29,14 +29,14 @@ message FSPParam
 {
     required string host = 1;
     required int32 port = 2;
-    required int32 sid = 3;
+    required uint32 sid = 3;
     optional int32 serverFrameInterval = 4 [default = 66];
     optional int32 serverTimeout = 5 [default = 15000]; //ms
     optional int32 clientFrameRateMultiple = 6 [default = 2];
-    optional int32 enableSpeedUp = 7 [default = 1]; //bool
+    optional bool enableSpeedUp = 7 [default = true]; //bool
     optional int32 defaultSpeed = 8 [default = 1];
     optional int32 frameBufferSize = 9;
-    optional int32 enableAutoBuffer = 10 [default = 1]; //bool
+    optional bool enableAutoBuffer = 10 [default = true]; //bool
     optional int32 maxFrameId = 11 [default = 1800];
     optional int32 authId = 12;
     optional bool useLocal = 13;
@@ -47,13 +47,13 @@ message FSPVKey
 {
     required int32 vkey = 1;
     repeated int32 args = 2;
-    required int32 playerIdOrFrameId = 3;  //S2C  服务器下发PlayerId, C2S  客户端上报ClientFrameId
+    required uint32 playerIdOrClientFrameId = 3;  //S2C  服务器下发PlayerId, C2S  客户端上报ClientFrameId
 }
 
 //客户端上报的数据
 message FSPData_CS
 {
-    required int32 sid = 1;
+    required uint32 sid = 1;
     repeated FSPVKey vkeys = 2;
 }
 
@@ -112,9 +112,9 @@ message FSPPlayerData
     required uint32 id = 1;
     optional string name = 2;
     optional uint32 userId = 3;
-    optional int32 sid = 4;
+    optional uint32 sid = 4;
     optional bool isReady = 5; //bool
-    optional int32 teamId = 6;
+    optional uint32 teamId = 6;
     optional bytes customPlayerData = 7; //byte[]
 }
 
