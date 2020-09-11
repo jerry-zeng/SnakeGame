@@ -3,15 +3,12 @@ using System.Collections.Generic;
 using Framework;
 using Framework.UI;
 using Framework.Module;
-using Framework.Network.FSP;
+using Framework.Network.FSP.Server;
 
 public class HostModule : BusinessModule 
 {
-    // TEST: 先在这边开房间，正式的要放到帧同步服务器
-    FSPRoom fspRoom;
-
-    public string ip { get{ return HasHost()? fspRoom.SelfIP : "";} }
-    public int port { get{ return HasHost()? fspRoom.SelfPort : 0;} }
+    public string ip { get{ return HasHost()? FSPServer.Instance.RoomIP : "";} }
+    public int port { get{ return HasHost()? FSPServer.Instance.RoomPort : 0;} }
 
 
     public override void Open(object arg)
@@ -33,22 +30,24 @@ public class HostModule : BusinessModule
 
     public bool HasHost()
     {
-        return fspRoom != null && fspRoom.IsRunning;
+        return FSPServer.Instance.IsRunning;
     }
 
     public void StartHost()
     {
         if (!HasHost())
         {
-            fspRoom = new FSPRoom();
-            fspRoom.Start();
+            FSPServer.Instance.Start(0);
+            FSPServer.Instance.SetServerTimeout(0);
+            //将自定义游戏参数传给房间
+            //以便于由房间通知玩家游戏开始时，能够将该参数转发给所有玩家
+            byte[] customGameParam = PBSerializer.Serialize(new GamePlay.GameParam());
+            FSPServer.Instance.Room.SetCustomGameParam(customGameParam);
 
             Debuger.Log("HostModule", string.Format("start host: {0}-{1}", ip, port));
 
             EventManager.Instance.SendEvent<string, int>("OnStartHost", ip, port);
             EventManager.Instance.SendEvent("OnHostChanged");
-
-            Scheduler.AddUpdateListener(OnUpdate);
         }
         else
         {
@@ -60,22 +59,13 @@ public class HostModule : BusinessModule
     {
         if (HasHost())
         {
-            Scheduler.RemoveUpdateListener(OnUpdate);
-
-            fspRoom.Destroy();
-            fspRoom = null;
+            FSPServer.Instance.Close();
 
             Debuger.Log("HostModule", "The host is stoped");
 
             EventManager.Instance.SendEvent("OnStopHost");
             EventManager.Instance.SendEvent("OnHostChanged");
         }
-    }
-
-    void OnUpdate()
-    {
-        if (fspRoom != null)
-            fspRoom.RPCTick();
     }
 
 }

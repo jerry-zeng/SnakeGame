@@ -36,7 +36,7 @@ namespace GamePlay
         {
             m_mainUserId = UserManager.Instance.UserData.id;
             m_mainUserName = UserManager.Instance.UserData.userName;
-            Debuger.Log("PVPRoom", "Start: userId={0}, name={1}", m_mainUserId, m_mainUserName);
+            Debuger.Log(LOG_TAG, "Start: userId={0}, name={1}", m_mainUserId, m_mainUserName);
 
             Scheduler.AddUpdateListener(OnUpdate);
         }
@@ -73,7 +73,7 @@ namespace GamePlay
 
             RPC(m_roomAddress, RoomRPC.RPC_JoinRoom, m_mainUserId, m_mainUserName, customPlayerData);
         }
-        void _RPC_OnJoinRoom(IPEndPoint target)
+        void _RPC_OnJoinRoom(IPEndPoint remote)
         {
             EventManager.Instance.SendEvent("OnJoinRoom");
         }
@@ -103,12 +103,12 @@ namespace GamePlay
             int t = (int)(Time.realtimeSinceStartup*1000);
             RPC(m_roomAddress, RoomRPC.RPC_Ping, t);
         }
-        void _RPC_Pong(IPEndPoint target, int pingArg)
+        void _RPC_Pong(IPEndPoint remote, int pingArg)
         {
             m_pingValue = (int)(Time.realtimeSinceStartup*1000) - pingArg;
         }
 
-        void _RPC_UpdateRoomInfo(IPEndPoint target, byte[] bytes)
+        void _RPC_UpdateRoomInfo(IPEndPoint remote, byte[] bytes)
         {
             FSPRoomData data = PBSerializer.Deserialize<FSPRoomData>(bytes);
             m_listPlayerInfo = data.players;
@@ -128,13 +128,14 @@ namespace GamePlay
             EventManager.Instance.SendEvent("OnRoomUpdate");
         }
 
-        void _RPC_NotifyGameStart(IPEndPoint target, byte[] bytes)
+        void _RPC_NotifyGameStart(IPEndPoint remote, byte[] bytes)
         {
+            // Debuger.Log(LOG_TAG, "_RPC_NotifyGameStart()");
             FSPGameStartParam data = PBSerializer.Deserialize<FSPGameStartParam>(bytes);
 
             PVPStartParam startParam = new PVPStartParam();
-            // startParam.fspParam = data.fspParam;
-            // startParam.gameParam = PBSerializer.Deserialize<GameParam>(data.customGameParam);
+            startParam.fspParam = data.fspParam;
+            startParam.gameParam = PBSerializer.Deserialize<GameParam>(data.customGameParam);
 
             for (int i = 0; i < data.players.Count; i++)
             {
@@ -146,15 +147,17 @@ namespace GamePlay
 				pb.userID = (uint)player.userId;
 				pb.userName = player.name;
 				pb.teamID = (int)player.id;
-                Debuger.Log("PVPRoom", "_RPC_NotifyGameStart: {0}", pb.ToString());
-                // startParam.players.Add(pb);
+                startParam.players.Add(pb);
+
+                Debuger.Log(LOG_TAG, "_RPC_NotifyGameStart: {0}", pb.ToString());
             }
             
             // EventManager.Instance.SendEvent<PVPStartParam>("OnGameStart", startParam);
         }
 
-        void _RPC_NotifyGameResult(IPEndPoint target, int reason)
+        void _RPC_NotifyGameResult(IPEndPoint remote, int reason)
         {
+            Debuger.Log(LOG_TAG, "_RPC_NotifyGameResult: {0}", reason);
             EventManager.Instance.SendEvent<int>("OnGameResult", reason);
         }
     }

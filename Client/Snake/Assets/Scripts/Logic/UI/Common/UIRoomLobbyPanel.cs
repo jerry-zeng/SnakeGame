@@ -16,6 +16,7 @@ public class UIRoomLobbyPanel : UIBasePanel
     public Text lab_JoinRoom;
     public Button btn_Ready;
     public Text lab_Ready;
+    public Text lab_SelfRoomAddr;
 
     public Button btn_Back;
 
@@ -86,6 +87,7 @@ public class UIRoomLobbyPanel : UIBasePanel
         EventManager.Instance.UnregisterEvent("OnRoomUpdate", UpdateRoom);
 
         pvpModule = null;
+        lab_SelfRoomAddr.text = "";
 
         base.Hide();
     }
@@ -114,6 +116,15 @@ public class UIRoomLobbyPanel : UIBasePanel
 
         btn_JoinRoom.gameObject.SetActive(!room.IsReady);
         btn_Ready.gameObject.SetActive(room.IsInRoom);
+
+        if (room.IsRunning)
+        {
+            lab_SelfRoomAddr.text = string.Format("{0}:{1}", room.SelfIP, room.SelfPort);
+        }
+        else
+        {
+            lab_SelfRoomAddr.text = "";
+        }
 
         listView.SetData(room.players);
     }

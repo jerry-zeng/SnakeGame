@@ -72,6 +72,8 @@ public class UIRoomHostPanel : UIBasePanel
 
         hostModule = null;
 
+        lab_roomIP.text = "";
+
         base.Hide();
     }
 

@@ -61,10 +61,10 @@ namespace GameProtocol
       get { return _clientFrameRateMultiple; }
       set { _clientFrameRateMultiple = value; }
     }
-    private int _enableSpeedUp = (int)1;
-    [global::ProtoBuf.ProtoMember(7, IsRequired = false, Name=@"enableSpeedUp", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
-    [global::System.ComponentModel.DefaultValue((int)1)]
-    public int enableSpeedUp
+    private bool _enableSpeedUp = (bool)true;
+    [global::ProtoBuf.ProtoMember(7, IsRequired = false, Name=@"enableSpeedUp", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue((bool)true)]
+    public bool enableSpeedUp
     {
       get { return _enableSpeedUp; }
       set { _enableSpeedUp = value; }
@@ -85,10 +85,10 @@ namespace GameProtocol
       get { return _frameBufferSize; }
       set { _frameBufferSize = value; }
     }
-    private int _enableAutoBuffer = (int)1;
-    [global::ProtoBuf.ProtoMember(10, IsRequired = false, Name=@"enableAutoBuffer", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
-    [global::System.ComponentModel.DefaultValue((int)1)]
-    public int enableAutoBuffer
+    private bool _enableAutoBuffer = (bool)true;
+    [global::ProtoBuf.ProtoMember(10, IsRequired = false, Name=@"enableAutoBuffer", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue((bool)true)]
+    public bool enableAutoBuffer
     {
       get { return _enableAutoBuffer; }
       set { _enableAutoBuffer = value; }
@@ -158,9 +158,9 @@ namespace GameProtocol
   {
     public FSPData_CS() {}
     
-    private int _sid;
+    private uint _sid;
     [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"sid", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
-    public int sid
+    public uint sid
     {
       get { return _sid; }
       set { _sid = value; }

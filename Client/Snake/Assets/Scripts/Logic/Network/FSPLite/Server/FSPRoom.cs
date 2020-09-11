@@ -5,7 +5,7 @@ using Framework.Network;
 using Framework.Network.RPC;
 using System.Net;
 
-namespace Framework.Network.FSP
+namespace Framework.Network.FSP.Server
 {
     public class FSPRoom : RPCService
     {
@@ -76,7 +76,7 @@ namespace Framework.Network.FSP
         }
 
 
-        void AddPlayer(IPEndPoint target, uint userId, string name, byte[] customPlayerData)
+        void AddPlayer(IPEndPoint remote, uint userId, string name, byte[] customPlayerData)
         {
             FSPPlayerData player = GetPlayerInfoByUserId(userId);
             if (player == null)
@@ -95,7 +95,7 @@ namespace Framework.Network.FSP
             // 刚进来不准备
             player.isReady = false;
 
-            m_mapUserId2Address[userId] = target;
+            m_mapUserId2Address[userId] = remote;
         }
 
         void RemovePlayerById(uint playerId)
@@ -158,20 +158,20 @@ namespace Framework.Network.FSP
         }
 
         // RPC绑定-------------------------------------------------------------------------------------------------
-        void _RPC_JoinRoom(IPEndPoint target, uint userId, string name, byte[] customPlayerData)
+        void _RPC_JoinRoom(IPEndPoint remote, uint userId, string name, byte[] customPlayerData)
         {
-            Debuger.Log("FSPRoom", "_RPC_JoinRoom: userId={0}, name={1}", userId, name);
-            AddPlayer(target, userId, name, customPlayerData);
+            Debuger.Log(LOG_TAG, "_RPC_JoinRoom: userId={0}, name={1}", userId, name);
+            AddPlayer(remote, userId, name, customPlayerData);
 
-            RPC(target, RoomRPC.RPC_OnJoinRoom);
+            RPC(remote, RoomRPC.RPC_OnJoinRoom);
             Call_UpdateRoomInfo();
         }
 
-        void _RPC_ExitRoom(IPEndPoint target, uint userId)
+        void _RPC_ExitRoom(IPEndPoint remote, uint userId)
         {
             RemovePlayerByUserId(userId);
 
-            RPC(target, RoomRPC.RPC_OnExitRoom);
+            RPC(remote, RoomRPC.RPC_OnExitRoom);
             Call_UpdateRoomInfo();
 
             // 有人退出可能就可以开始了
@@ -181,8 +181,9 @@ namespace Framework.Network.FSP
             }
         }
 
-        void _RPC_RoomReady(IPEndPoint target, uint userId)
+        void _RPC_RoomReady(IPEndPoint remote, uint userId)
         {
+            Debuger.Log(LOG_TAG, "_RPC_RoomReady: userId={0}", userId);
             SetReady(userId, true);
             Call_UpdateRoomInfo();
 
@@ -192,15 +193,16 @@ namespace Framework.Network.FSP
             }
         }
 
-        void _RPC_CancelReady(IPEndPoint target, uint userId)
+        void _RPC_CancelReady(IPEndPoint remote, uint userId)
         {
+            Debuger.Log(LOG_TAG, "_RPC_CancelReady: userId={0}", userId);
             SetReady(userId, false);
             Call_UpdateRoomInfo();
         }
 
-        void _RPC_Ping(IPEndPoint target, int pingArg)
+        void _RPC_Ping(IPEndPoint remote, int pingArg)
         {
-            RPC(target, RoomRPC.RPC_Pong, pingArg);
+            RPC(remote, RoomRPC.RPC_Pong, pingArg);
         }
 
         void Call_UpdateRoomInfo()
@@ -209,7 +211,7 @@ namespace Framework.Network.FSP
 
 			for (int i = 0; i < players.Count; ++i) 
 			{
-				this.Log ("Call_UpdateRoomInfo() Player: {0}-{1}", players[i].userId, players[i].name);
+				Debuger.Log(LOG_TAG, "Call_UpdateRoomInfo() Player: {0}-{1}", players[i].userId, players[i].name);
 			}
 
             byte[] param = PBSerializer.Serialize(m_data);
@@ -218,11 +220,12 @@ namespace Framework.Network.FSP
 
         void Call_NotifyGameStart()
         {
+            Debuger.Log(LOG_TAG, "Call_NotifyGameStart()");
+
             var players = m_data.players;
 
             FSPGameStartParam param = new FSPGameStartParam();
-            // param.fspParam = FSPServer.Instance.GetParam();
-            param.fspParam = new FSPParam(); //TEST
+            param.fspParam = FSPServer.Instance.GetParam();
 
             foreach(var player in players)
             {
@@ -230,9 +233,9 @@ namespace Framework.Network.FSP
             }
             param.customGameParam = m_customGameParam;
 
-			// FSPServer.Instance.StartGame ();
-			// FSPServer.Instance.Game.onGameExit += _OnGameExit;
-			// FSPServer.Instance.Game.onGameEnd += _OnGameEnd;
+            FSPServer.Instance.StartGame(param.fspParam);
+            FSPServer.Instance.Game.onGameExit += _OnGameExit;
+            FSPServer.Instance.Game.onGameEnd += _OnGameEnd;
 
             for (int i = 0; i < players.Count; i++)
             {
@@ -257,7 +260,7 @@ namespace Framework.Network.FSP
 
 		void _OnGameEnd(int reason)
 		{
-			// FSPServer.Instance.StopGame();
+			FSPServer.Instance.StopGame();
 
 			RPC(GetAllAddress(), RoomRPC.RPC_NotifyGameResult, reason);
 		}

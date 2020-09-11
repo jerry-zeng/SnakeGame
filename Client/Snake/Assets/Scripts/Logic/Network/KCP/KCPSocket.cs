@@ -243,14 +243,14 @@ namespace Framework.Network.Kcp
         }
 
 
-        public void CloseKcp(IPEndPoint ipep)
+        public void CloseKcp(IPEndPoint remotePoint)
         {
             KCPProxy proxy = null;
             int cnt = m_ListKcp.Count;
             for (int i = 0; i < cnt; i++)
             {
                 proxy = m_ListKcp[i];
-                if (proxy.RemotePoint.Equals(ipep))
+                if (proxy.RemotePoint.Equals(remotePoint))
                 {
                     m_ListKcp.RemoveAt(i);
                     break;

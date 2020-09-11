@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Net;
-using Exception=System.Exception;
+using Exception = System.Exception;
 using System.Reflection;
 using Framework.Network.Kcp;
 
@@ -9,7 +9,7 @@ namespace Framework.Network.RPC
 {
     public class RPCService
     {
-        private string LOG_TAG = "RPCService";
+        protected string LOG_TAG = "RPCService";
 
         // fields
         private KCPSocket m_Socket;
@@ -85,41 +85,42 @@ namespace Framework.Network.RPC
             }
         }
 
-        void HandleRPCMessage(RPCMessage msg, IPEndPoint target)
+        void HandleRPCMessage(RPCMessage msg, IPEndPoint remote)
         {
             MethodInfo mi = this.GetType().GetMethod(msg.name, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
             if (mi != null)
             {
-                Debuger.Log(LOG_TAG, "HandleRPCMessage() DefaultRPC:{0}, Target:{1}", msg.name, target);
+                Debuger.Log(LOG_TAG, "HandleRPCMessage() DefaultRPC<{0}> Remote:{1}", msg.name, remote);
+
+                List<object> args = new List<object>();
+                args.Add(remote);  //放第一个参数
+                args.AddRange(msg.args);
+
                 try
                 {
-                    List<object> args = new List<object>();
-                    args.Add(target);  //放第一个参数
-                    args.AddRange(msg.args);
-                    
                     // 调用自己的方法
-                    mi.Invoke(this, BindingFlags.NonPublic, null, args.ToArray(), null);
+                    mi.Invoke(this, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public, null, args.ToArray(), null);
                 }
                 catch (Exception e)
                 {
-                    Debuger.LogError(LOG_TAG, "HandleRPCMessage() DefaultRPC<" + msg.name + ">响应出错:" + e.Message + "\n" + e.StackTrace + "\n");
+                    Debuger.LogError(LOG_TAG, "HandleRPCMessage() DefaultRPC<{0}>出错: {1}\n{2}\n 参数: {3}", msg.name, e.Message, e.StackTrace, ListToString(args));
                 }
             }
             else
             {
-                OnBindingRPCInvoke(msg, target);
+                OnBindingRPCInvoke(remote, msg);
             }
         }
 
-        void OnBindingRPCInvoke(RPCMessage msg, IPEndPoint target)
+        void OnBindingRPCInvoke(IPEndPoint remote, RPCMessage msg)
         {
             if (m_RPCBindMap.ContainsKey(msg.name))
             {
-                Debuger.Log(LOG_TAG, "OnBindingRPCInvoke() RPC:{0}, Target:{1}", msg.name, target);
+                Debuger.Log(LOG_TAG, "OnBindingRPCInvoke() RPC:{0}, Remote:{1}", msg.name, remote);
                 try
                 {
                     RPCMethodHelperBase rpc = m_RPCBindMap[msg.name];
-                    rpc.Invoke(target, msg.args);
+                    rpc.Invoke(remote, msg.args);
                 }
                 catch (Exception e)
                 {
@@ -131,26 +132,42 @@ namespace Framework.Network.RPC
                 Debuger.LogWarning(LOG_TAG, "OnBindingRPCInvoke() 收到未知的RPC: {0}", msg.name);
             }
         }
+        
+        static string ListToString(List<object> args)
+        {
+            if (args == null)
+                return "null";
+            
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            foreach(var arg in args)
+            {
+                if (arg != null){
+                    sb.Append(arg.ToString());
+                    sb.Append(", ");
+                }
+            }
+            return sb.ToString();
+        }
         #endregion
     
         //=====================================================================
         #region 消息发送
-        void SendMessage(IPEndPoint target, RPCMessage msg)
+        void SendMessage(IPEndPoint remote, RPCMessage msg)
         {
             byte[] buffer = PBSerializer.Serialize(msg);
-            m_Socket.SendTo(buffer, buffer.Length, target);
+            m_Socket.SendTo(buffer, buffer.Length, remote);
         }
 
-        void SendMessage(List<IPEndPoint> listTargets, RPCMessage msg)
+        void SendMessage(List<IPEndPoint> remoteList, RPCMessage msg)
         {
             byte[] buffer = PBSerializer.Serialize(msg);
 
-            for (int i = 0; i < listTargets.Count; i++)
+            for (int i = 0; i < remoteList.Count; i++)
             {
-                IPEndPoint target = listTargets[i];
-                if (target != null)
+                IPEndPoint remote = remoteList[i];
+                if (remote != null)
                 {
-                    m_Socket.SendTo(buffer, buffer.Length, target);
+                    m_Socket.SendTo(buffer, buffer.Length, remote);
                 }
             }
         }
@@ -168,24 +185,24 @@ namespace Framework.Network.RPC
     
         //=====================================================================
         #region RPC接口
-        public void RPC(IPEndPoint target, string name, params object[] args)
+        public void RPC(IPEndPoint remote, string name, params object[] args)
         {
-            Debuger.Log(LOG_TAG, "RPC() 1对1调用, name:{0}, target:{1}", name, target);
+            Debuger.Log(LOG_TAG, "RPC() 1对1调用, name:{0}, remote:{1}", name, remote);
 
             RPCMessage msg = new RPCMessage();
             msg.name = name;
             msg.args = args;
-            SendMessage(target, msg);
+            SendMessage(remote, msg);
         }
 
-        public void RPC(List<IPEndPoint> listTargets, string name, params object[] args)
+        public void RPC(List<IPEndPoint> remoteList, string name, params object[] args)
         {
             Debuger.Log(LOG_TAG, "RPC() 1对多调用, Begin, msg:{0}", name);
 
             RPCMessage msg = new RPCMessage();
             msg.name = name;
             msg.args = args;
-            SendMessage(listTargets, msg);
+            SendMessage(remoteList, msg);
 
             Debuger.Log(LOG_TAG, "RPC() 1对多调用, End!");
         }
@@ -201,14 +218,14 @@ namespace Framework.Network.RPC
         }
 
         // 一般是发送给本地
-        public void RPC(RPCService target, string name, params object[] args)
+        public void RPC(RPCService remote, string name, params object[] args)
         {
-            Debuger.Log(LOG_TAG, "RPC() 调用具体对象, RPCService:{0}, msg:{1}",  target.SelfPort, name);
+            Debuger.Log(LOG_TAG, "RPC() 调用具体对象, RPCService:{0}, msg:{1}",  remote.SelfPort, name);
 
             RPCMessage msg = new RPCMessage();
             msg.name = name;
             msg.args = args;
-            target.HandleRPCMessage(msg, null);
+            remote.HandleRPCMessage(msg, null);
         }
         #endregion
 
