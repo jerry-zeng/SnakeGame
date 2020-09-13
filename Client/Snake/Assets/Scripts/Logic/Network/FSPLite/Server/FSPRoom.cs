@@ -69,7 +69,8 @@ namespace Framework.Network.FSP.Server
             {
                 uint userId = players[i].userId;
                 // 这里如果报错，说明前面添加和删除出错了
-                list.Add(m_mapUserId2Address[userId]);
+                if ( m_mapUserId2Address.ContainsKey(userId) )
+                    list.Add(m_mapUserId2Address[userId]);
             }
 
             return list;
@@ -233,28 +234,37 @@ namespace Framework.Network.FSP.Server
             }
             param.customGameParam = m_customGameParam;
 
-            FSPServer.Instance.StartGame(param.fspParam);
-            FSPServer.Instance.Game.onGameExit += _OnGameExit;
+            FSPServer.Instance.StartGame();
+            FSPServer.Instance.Game.onPlayerExit += _OnPlayerExit;
             FSPServer.Instance.Game.onGameEnd += _OnGameEnd;
 
             for (int i = 0; i < players.Count; i++)
             {
                 var player = players[i];
-                IPEndPoint address = m_mapUserId2Address[player.userId];
+                
                 param.fspParam.sid = player.sid;
 
                 //将玩家加入到FSPServer中
                 FSPServer.Instance.Game.AddPlayer(player.id, player.sid);
 
-                byte[] buff = PBSerializer.Serialize(param);
-                RPC(address, RoomRPC.RPC_NotifyGameStart, buff);
+                if (m_mapUserId2Address.ContainsKey(player.userId))
+                {
+                    IPEndPoint address = m_mapUserId2Address[player.userId];
+
+                    byte[] buff = PBSerializer.Serialize(param);
+                    RPC(address, RoomRPC.RPC_NotifyGameStart, buff);
+                }
+                else
+                {
+                    Debuger.LogError(LOG_TAG, "User {0} does not have net address", player.userId);
+                }
             }
         }
 
         //游戏逻辑--------------------------------------------------
-        void _OnGameExit(uint playerId)
+        void _OnPlayerExit(uint playerId)
 		{
-			RemovePlayerById (playerId);
+			RemovePlayerById(playerId);
 			Call_UpdateRoomInfo();
 		}
 

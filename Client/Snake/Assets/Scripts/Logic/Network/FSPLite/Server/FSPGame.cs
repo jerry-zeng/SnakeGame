@@ -53,7 +53,7 @@ namespace Framework.Network.FSP.Server
 
 
         //有一个玩家退出游戏
-		public event Action<uint> onGameExit;
+		public event Action<uint> onPlayerExit;
 		//游戏真正结束
 		public event Action<int> onGameEnd;
 
@@ -85,7 +85,7 @@ namespace Framework.Network.FSP.Server
             m_ListPlayersExitOnNextFrame.Clear();
             m_FrameRecords.Clear();
 
-            onGameExit = null;
+            onPlayerExit = null;
             onGameEnd = null;
 
             GC.Collect();
@@ -177,11 +177,13 @@ namespace Framework.Network.FSP.Server
         /// <param name="cmd"></param>
         protected virtual void HandleClientCmd(FSPPlayer player, FSPVKey cmd)
         {
+            // Debuger.Log(LOG_TAG, "HandleClientCmd() cmd: {0}", cmd.ToString());
+
             uint playerId = player.Id;
 
             if (!player.HasAuth)
             {
-                Debuger.Log(LOG_TAG, "HandleClientCmd() hasAuth = false! Wait AUTH!");
+                Debuger.Log(LOG_TAG, "HandleClientCmd() hasAuth = false! Wait for AUTH! the vkey is {0}", cmd.vkey);
                 if (cmd.vkey == (int)FSPVKeyBase.AUTH)
                 {
                     player.HasAuth = true;
@@ -214,9 +216,9 @@ namespace Framework.Network.FSP.Server
                     SetFlag(playerId, ref m_GameEndFlag, "m_GameEndFlag");
                 break;
 
-                case (int)FSPVKeyBase.GAME_EXIT:
-                    Debuger.Log(LOG_TAG, "HandleClientCmd() GAME_EXIT, playerId = {0}, cmd = {1}", playerId, cmd);
-                    HandleGameExit(playerId, cmd);
+                case (int)FSPVKeyBase.PLAYER_EXIT:
+                    Debuger.Log(LOG_TAG, "HandleClientCmd() PLAYER_EXIT, playerId = {0}, cmd = {1}", playerId, cmd);
+                    HandlePlayerExit(playerId, cmd);
                 break;
 
                 default:
@@ -226,7 +228,7 @@ namespace Framework.Network.FSP.Server
             }
         }
 
-        void HandleGameExit(uint playerId, FSPVKey cmd)
+        void HandlePlayerExit(uint playerId, FSPVKey cmd)
         {
             AddCmdToCurrentFrame(playerId, cmd);
 
@@ -236,8 +238,8 @@ namespace Framework.Network.FSP.Server
             {
                 player.WaitForExit = true;
 
-                if (onGameExit != null)
-                    onGameExit(player.Id);
+                if (onPlayerExit != null)
+                    onPlayerExit(player.Id);
             }
         }
 

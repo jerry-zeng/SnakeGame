@@ -6,6 +6,8 @@ namespace Framework.Network.FSP.Server
 {
     public class FSPPlayer
     {
+        private string LOG_TAG = "FSPPlayer";
+
         private uint _id;
         public uint Id 
         { 
@@ -44,6 +46,8 @@ namespace Framework.Network.FSP.Server
 
             m_ReceiveListener = listener;
             WaitForExit = false;
+
+            LOG_TAG = LOG_TAG + "[" + playerId + "]";
         }
 
         public void Dispose()
@@ -63,6 +67,7 @@ namespace Framework.Network.FSP.Server
             if (m_Session.IsEndPointChanged)
             {
                 m_HasAuth = false;
+                Debuger.LogWarning(LOG_TAG, "The EndPoint is changed, cancel it's auth !");
             }
 
             if (m_ReceiveListener != null)

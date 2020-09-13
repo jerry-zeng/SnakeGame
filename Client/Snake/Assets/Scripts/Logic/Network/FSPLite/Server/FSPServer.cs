@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using Framework.Network.Kcp;
-using Framework.Network.RPC;
 using GameProtocol;
 
 namespace Framework.Network.FSP.Server
@@ -278,7 +277,7 @@ namespace Framework.Network.FSP.Server
 
 
         #region Game Logic
-        public FSPGame StartGame(FSPParam param)
+        public FSPGame StartGame()
         {
             if (m_Game != null)
                 m_Game.Stop();

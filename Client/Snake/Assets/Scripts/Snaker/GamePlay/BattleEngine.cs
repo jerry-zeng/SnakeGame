@@ -231,7 +231,7 @@ namespace GamePlay
         }
         bool DoVKey_RemovePlayer(int vkey, float arg, int playerId)
         {
-            if (vkey == (int)FSPVKeyBase.GAME_EXIT)
+            if (vkey == (int)FSPVKeyBase.PLAYER_EXIT)
             {
                 RemoveSnakerByID(playerId);
                 Debuger.Log("BattleEngine", "DoVKey_RemovePlayer: {0}", playerId);

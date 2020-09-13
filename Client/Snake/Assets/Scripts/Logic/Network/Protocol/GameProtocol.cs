@@ -77,21 +77,21 @@ namespace GameProtocol
       get { return _defaultSpeed; }
       set { _defaultSpeed = value; }
     }
-    private int _frameBufferSize = default(int);
-    [global::ProtoBuf.ProtoMember(9, IsRequired = false, Name=@"frameBufferSize", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
-    [global::System.ComponentModel.DefaultValue(default(int))]
-    public int frameBufferSize
-    {
-      get { return _frameBufferSize; }
-      set { _frameBufferSize = value; }
-    }
     private bool _enableAutoBuffer = (bool)true;
-    [global::ProtoBuf.ProtoMember(10, IsRequired = false, Name=@"enableAutoBuffer", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::ProtoBuf.ProtoMember(9, IsRequired = false, Name=@"enableAutoBuffer", DataFormat = global::ProtoBuf.DataFormat.Default)]
     [global::System.ComponentModel.DefaultValue((bool)true)]
     public bool enableAutoBuffer
     {
       get { return _enableAutoBuffer; }
       set { _enableAutoBuffer = value; }
+    }
+    private int _frameBufferSize = default(int);
+    [global::ProtoBuf.ProtoMember(10, IsRequired = false, Name=@"frameBufferSize", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    [global::System.ComponentModel.DefaultValue(default(int))]
+    public int frameBufferSize
+    {
+      get { return _frameBufferSize; }
+      set { _frameBufferSize = value; }
     }
     private int _maxFrameId = (int)1800;
     [global::ProtoBuf.ProtoMember(11, IsRequired = false, Name=@"maxFrameId", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
@@ -392,14 +392,14 @@ namespace GameProtocol
       [global::ProtoBuf.ProtoEnum(Name=@"CONTROL_START", Value=104)]
       CONTROL_START = 104,
             
-      [global::ProtoBuf.ProtoEnum(Name=@"GAME_EXIT", Value=105)]
-      GAME_EXIT = 105,
+      [global::ProtoBuf.ProtoEnum(Name=@"ROUND_END", Value=105)]
+      ROUND_END = 105,
             
-      [global::ProtoBuf.ProtoEnum(Name=@"ROUND_END", Value=106)]
-      ROUND_END = 106,
+      [global::ProtoBuf.ProtoEnum(Name=@"GAME_END", Value=106)]
+      GAME_END = 106,
             
-      [global::ProtoBuf.ProtoEnum(Name=@"GAME_END", Value=107)]
-      GAME_END = 107,
+      [global::ProtoBuf.ProtoEnum(Name=@"PLAYER_EXIT", Value=107)]
+      PLAYER_EXIT = 107,
             
       [global::ProtoBuf.ProtoEnum(Name=@"AUTH", Value=108)]
       AUTH = 108,
