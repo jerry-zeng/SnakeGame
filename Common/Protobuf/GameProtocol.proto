@@ -30,14 +30,17 @@ message FSPParam
     required string host = 1;
     required int32 port = 2;
     required uint32 sid = 3;
-    optional int32 serverFrameInterval = 4 [default = 66];
+
+    optional int32 serverFrameInterval = 4 [default = 66];  //ms, 15fps
     optional int32 serverTimeout = 5 [default = 15000]; //ms
+
     optional int32 clientFrameRateMultiple = 6 [default = 2];
     optional bool enableSpeedUp = 7 [default = true]; //bool
     optional int32 defaultSpeed = 8 [default = 1];
-    optional int32 frameBufferSize = 9;
-    optional bool enableAutoBuffer = 10 [default = true]; //bool
-    optional int32 maxFrameId = 11 [default = 1800];
+    optional bool enableAutoBuffer = 9 [default = true]; //bool
+    optional int32 frameBufferSize = 10;
+
+    optional int32 maxFrameId = 11 [default = 1800];  //限时模式最大时长: 1800/15=120s
     optional int32 authId = 12;
     optional bool useLocal = 13;
 }
@@ -79,9 +82,9 @@ enum FSPVKeyBase
     LOAD_START = 102;
     LOAD_PROGRESS = 103;
     CONTROL_START = 104;
-    GAME_EXIT = 105;
-    ROUND_END = 106;
-    GAME_END = 107;
+    ROUND_END = 105;
+    GAME_END = 106;
+    PLAYER_EXIT = 107;
     AUTH = 108;
     PING = 109;
 }
